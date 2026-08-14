@@ -1,0 +1,2662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HADES II: CHRONOS FALL - Pre-rendered 3D Roguelike</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Philosopher:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold-primary: #e6b450;
+      --gold-light: #fff2a8;
+      --gold-dark: #8c5b16;
+      --bronze: #5a3818;
+      --obsidian: #0e0d13;
+      --magick-purple: #b356ff;
+      --magick-glow: #e084ff;
+      --health-green: #3cd070;
+      --health-red: #d9383a;
+      --underworld-teal: #2ae6b4;
+      --olympus-blue: #38bdf8;
+      --crimson: #ef4444;
+      --font-title: 'Cinzel', serif;
+      --font-body: 'Philosopher', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06050a;
+      font-family: var(--font-body);
+      color: #f1e9da;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at center, #140e1d 0%, #06050a 100%);
+    }
+
+    canvas#gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      cursor: crosshair;
+    }
+
+    /* UI Layer Overlay */
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px;
+    }
+
+    /* Top HUD: Health, Magick, Chamber, Currencies */
+    .top-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .player-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 320px;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.8));
+    }
+
+    .bar-wrapper {
+      position: relative;
+      height: 24px;
+      background: #110e18;
+      border: 2px solid var(--gold-dark);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.9);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 100%;
+      transition: width 0.15s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+
+    .bar-fill.health {
+      background: linear-gradient(90deg, #991b1b, #ef4444, #f87171);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    }
+
+    .bar-fill.magick {
+      background: linear-gradient(90deg, #6b21a8, #a855f7, #c084fc);
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+    }
+
+    .bar-text {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      font-family: var(--font-title);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px #000;
+      color: #fff;
+    }
+
+    .top-center-hud {
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .chamber-title {
+      font-family: var(--font-title);
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--gold-light);
+      text-transform: uppercase;
+      text-shadow: 0 0 14px rgba(230, 180, 80, 0.8), 0 2px 8px #000;
+    }
+
+    .chamber-subtitle {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #a79cb5;
+      text-transform: uppercase;
+    }
+
+    .currency-panel {
+      display: flex;
+      gap: 16px;
+      background: rgba(14, 13, 19, 0.85);
+      border: 1px solid var(--gold-dark);
+      padding: 8px 16px;
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+    }
+
+    .currency-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-title);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold-light);
+    }
+
+    .icon-obol { color: #f59e0b; filter: drop-shadow(0 0 6px #f59e0b); }
+    .icon-ash { color: #94a3b8; filter: drop-shadow(0 0 6px #cbd5e1); }
+    .icon-bones { color: #a855f7; filter: drop-shadow(0 0 6px #c084fc); }
+
+    /* Left Active Boons Display */
+    .active-boons-list {
+      position: absolute;
+      left: 18px;
+      top: 90px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 60vh;
+      pointer-events: auto;
+    }
+
+    .boon-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(14, 13, 19, 0.88);
+      border-left: 3px solid var(--gold-primary);
+      padding: 6px 12px;
+      border-radius: 0 6px 6px 0;
+      border-top: 1px solid rgba(230, 180, 80, 0.2);
+      border-bottom: 1px solid rgba(230, 180, 80, 0.2);
+      border-right: 1px solid rgba(230, 180, 80, 0.2);
+      backdrop-filter: blur(4px);
+      transition: transform 0.2s;
+    }
+    .boon-badge:hover {
+      transform: translateX(4px);
+    }
+    .boon-badge-god {
+      font-family: var(--font-title);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .boon-badge-name {
+      font-size: 13px;
+      color: #fff;
+    }
+
+    /* Bottom Abilities / Hex HUD */
+    .bottom-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+    }
+
+    .abilities-cluster {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .ability-slot {
+      width: 58px;
+      height: 58px;
+      background: rgba(14, 13, 19, 0.9);
+      border: 2px solid var(--gold-dark);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    }
+
+    .ability-slot.active {
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 14px rgba(230, 180, 80, 0.6);
+    }
+
+    .ability-key {
+      position: absolute;
+      top: -8px;
+      right: -6px;
+      background: #2a1f10;
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-light);
+      font-size: 10px;
+      font-weight: 900;
+      font-family: var(--font-title);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .ability-icon {
+      font-size: 18px;
+    }
+
+    .ability-name {
+      font-size: 9px;
+      font-family: var(--font-title);
+      color: #cbd5e1;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Hex Moon Circle Gauge */
+    .hex-circle {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2d1847 0%, #0e0717 100%);
+      border: 3px solid #7c3aed;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 0 18px rgba(124, 58, 237, 0.5);
+    }
+
+    .hex-circle.ready {
+      border-color: #c084fc;
+      box-shadow: 0 0 24px rgba(192, 132, 252, 0.9);
+      animation: hexPulse 1.5s infinite alternate;
+    }
+
+    @keyframes hexPulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      100% { transform: scale(1.06); filter: brightness(1.3); }
+    }
+
+    /* Boss Health Bar (Bottom Center) */
+    .boss-bar-container {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 580px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.9));
+    }
+
+    .boss-name {
+      font-family: var(--font-title);
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: #fef08a;
+      text-transform: uppercase;
+      text-shadow: 0 0 12px #ca8a04, 0 2px 4px #000;
+    }
+
+    .boss-bar-frame {
+      position: relative;
+      width: 100%;
+      height: 28px;
+      background: #110e18;
+      border: 2px solid #ca8a04;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .boss-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #b45309, #eab308, #fef08a);
+      box-shadow: 0 0 16px rgba(234, 179, 8, 0.7);
+      transition: width 0.1s linear;
+    }
+
+    /* Modal Windows (Boon Selection, Dialog, Altar, Game Over) */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 3, 7, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #0f0c18;
+      border: 2px solid var(--gold-primary);
+      border-radius: 12px;
+      padding: 28px 36px;
+      box-shadow: 0 0 40px rgba(230, 180, 80, 0.3), inset 0 0 30px rgba(0,0,0,0.8);
+      max-width: 860px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+      animation: modalFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalFade {
+      0% { opacity: 0; transform: scale(0.92) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-title {
+      font-family: var(--font-title);
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--gold-light);
+      margin-bottom: 6px;
+      text-shadow: 0 0 16px rgba(230, 180, 80, 0.6);
+    }
+
+    .modal-subtitle {
+      font-size: 15px;
+      color: #a79cb5;
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+
+    /* Boon Selection Cards Grid */
+    .boon-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    .boon-card {
+      background: linear-gradient(180deg, #1c152a 0%, #0d0a14 100%);
+      border: 2px solid var(--gold-dark);
+      border-radius: 10px;
+      padding: 20px 16px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 220px;
+    }
+
+    .boon-card:hover {
+      border-color: var(--gold-light);
+      transform: translateY(-6px);
+      box-shadow: 0 10px 24px rgba(230, 180, 80, 0.4), inset 0 0 15px rgba(230, 180, 80, 0.2);
+    }
+
+    .boon-rarity {
+      font-family: var(--font-title);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .rarity-common { color: #cbd5e1; }
+    .rarity-rare { color: #60a5fa; }
+    .rarity-epic { color: #c084fc; }
+    .rarity-heroic { color: #f59e0b; }
+
+    .boon-card-name {
+      font-family: var(--font-title);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+    }
+
+    .boon-card-desc {
+      font-size: 13px;
+      line-height: 1.4;
+      color: #d1c7dc;
+      flex-grow: 1;
+    }
+
+    .boon-card-slot {
+      margin-top: 12px;
+      font-size: 11px;
+      font-family: var(--font-title);
+      color: #94a3b8;
+      text-transform: uppercase;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 6px;
+    }
+
+    /* God Dialogue Modal */
+    .dialogue-modal {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      text-align: left;
+    }
+
+    .dialogue-portrait-canvas {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 3px solid var(--gold-primary);
+      box-shadow: 0 0 20px rgba(230, 180, 80, 0.5);
+      flex-shrink: 0;
+      background: #110e18;
+    }
+
+    .dialogue-content {
+      flex-grow: 1;
+    }
+
+    .dialogue-god-name {
+      font-family: var(--font-title);
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--gold-light);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .dialogue-text {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #f1e9da;
+      font-style: italic;
+      margin-bottom: 18px;
+    }
+
+    /* Generic Buttons */
+    .hades-btn {
+      background: linear-gradient(180deg, #3d2410 0%, #1e1106 100%);
+      border: 2px solid var(--gold-primary);
+      color: var(--gold-light);
+      font-family: var(--font-title);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      transition: all 0.2s;
+    }
+
+    .hades-btn:hover {
+      background: linear-gradient(180deg, #5e3717 0%, #301b0a 100%);
+      border-color: var(--gold-light);
+      box-shadow: 0 0 16px rgba(230, 180, 80, 0.6);
+      transform: translateY(-2px);
+    }
+
+    /* Upgrades / Altar of Ashes */
+    .altar-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    .altar-card {
+      background: rgba(22, 17, 34, 0.9);
+      border: 1px solid var(--gold-dark);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .altar-info h4 {
+      font-family: var(--font-title);
+      font-size: 15px;
+      color: var(--gold-light);
+      margin-bottom: 2px;
+    }
+
+    .altar-info p {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* Controls Helper Banner */
+    .controls-banner {
+      position: absolute;
+      bottom: 85px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 16px;
+      background: rgba(10, 8, 16, 0.75);
+      border: 1px solid rgba(230, 180, 80, 0.3);
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 11px;
+      font-family: var(--font-title);
+      color: #cbd5e1;
+      letter-spacing: 1px;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+
+    .key-badge {
+      color: var(--gold-primary);
+      font-weight: 700;
+    }
+
+    /* Damage numbers floating */
+    .floating-text {
+      position: absolute;
+      pointer-events: none;
+      font-family: var(--font-title);
+      font-weight: 900;
+      text-shadow: 0 2px 4px #000, 0 0 8px rgba(0,0,0,0.8);
+      animation: floatUp 0.8s ease-out forwards;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+      100% { opacity: 0; transform: translate(-50%, -100px) scale(0.8); }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+      <!-- Top HUD -->
+      <div class="top-hud">
+        <div class="player-bars">
+          <div class="bar-wrapper">
+            <div id="hp-bar" class="bar-fill health" style="width: 100%;"></div>
+            <div class="bar-text"><span>HEALTH</span><span id="hp-text">100 / 100</span></div>
+          </div>
+          <div class="bar-wrapper">
+            <div id="magick-bar" class="bar-fill magick" style="width: 100%;"></div>
+            <div class="bar-text"><span>MAGICK</span><span id="magick-text">50 / 50</span></div>
+          </div>
+        </div>
+
+        <div class="top-center-hud">
+          <div id="chamber-name" class="chamber-title">EREBUS - CHAMBER 1</div>
+          <div id="chamber-sub" class="chamber-subtitle">Underworld Gateway</div>
+        </div>
+
+        <div class="currency-panel">
+          <div class="currency-item"><span class="icon-obol">🪙</span> <span id="gold-count">0</span></div>
+          <div class="currency-item"><span class="icon-ash">🌪️</span> <span id="ash-count">0</span></div>
+          <div class="currency-item"><span class="icon-bones">🦴</span> <span id="bones-count">0</span></div>
+        </div>
+      </div>
+
+      <!-- Left Active Boons HUD -->
+      <div id="active-boons" class="active-boons-list"></div>
+
+      <!-- Controls helper -->
+      <div class="controls-banner">
+        <span><span class="key-badge">WASD</span> Move</span>
+        <span><span class="key-badge">L-CLICK / J</span> Attack</span>
+        <span><span class="key-badge">R-CLICK / K</span> Special</span>
+        <span><span class="key-badge">Q / E</span> Cast Circle</span>
+        <span><span class="key-badge">SPACE / SHIFT</span> Dash</span>
+        <span><span class="key-badge">F</span> Hex</span>
+        <span><span class="key-badge">M</span> Mute</span>
+      </div>
+
+      <!-- Bottom HUD -->
+      <div class="bottom-hud">
+        <div class="abilities-cluster">
+          <div class="ability-slot active">
+            <div class="ability-key">L-CLICK</div>
+            <div class="ability-icon">⚔️</div>
+            <div class="ability-name">Strike</div>
+          </div>
+          <div class="ability-slot active">
+            <div class="ability-key">R-CLICK</div>
+            <div class="ability-icon">🌙</div>
+            <div class="ability-name">Special</div>
+          </div>
+          <div class="ability-slot active">
+            <div class="ability-key">Q</div>
+            <div class="ability-icon">⭕</div>
+            <div class="ability-name">Cast</div>
+          </div>
+          <div class="ability-slot active">
+            <div class="ability-key">SPACE</div>
+            <div class="ability-icon">💨</div>
+            <div class="ability-name">Dash</div>
+          </div>
+        </div>
+
+        <!-- Boss Health Bar -->
+        <div id="boss-hud" class="boss-bar-container">
+          <div id="boss-name-text" class="boss-name">CHRONOS — TITAN OF TIME</div>
+          <div class="boss-bar-frame">
+            <div id="boss-hp-bar" class="boss-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- Selene Hex Gauge -->
+        <div id="hex-gauge" class="hex-circle">
+          <div class="ability-key">F</div>
+          <div style="font-size: 20px;">🌕</div>
+          <div style="font-size: 9px; font-family: var(--font-title); color: #c084fc; font-weight: 700;">HEX</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- God Boon Modal -->
+    <div id="boon-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="dialogue-modal">
+          <canvas id="god-portrait-canvas" class="dialogue-portrait-canvas" width="140" height="140"></canvas>
+          <div class="dialogue-content">
+            <div id="god-name" class="dialogue-god-name">ZEUS, LORD OF OLYMPUS</div>
+            <div id="god-quote" class="dialogue-text">"Take my lightning, niece. Smite the usurper of Time and light up the darkness!"</div>
+          </div>
+        </div>
+        <div class="modal-title">CHOOSE A BOON</div>
+        <div class="modal-subtitle">Bestow divine power upon your blade, cast, or dash</div>
+        <div id="boon-choices-container" class="boon-cards-grid"></div>
+      </div>
+    </div>
+
+    <!-- Altar of Ashes (Meta Progression Hub) -->
+    <div id="altar-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title">THE ALTAR OF ASHES</div>
+        <div class="modal-subtitle">Channel the remnants of the underworld to empower Melinoë</div>
+        <div class="altar-grid" id="altar-items-grid"></div>
+        <button id="start-run-btn" class="hades-btn">DESCEND INTO THE UNDERWORLD ➔</button>
+      </div>
+    </div>
+
+    <!-- Game Over / Victory Modal -->
+    <div id="gameover-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div id="gameover-title" class="modal-title">DEATH APPROACHES</div>
+        <div id="gameover-subtitle" class="modal-subtitle">There is no escape from the Underworld. Return to the Crossroads.</div>
+        <div style="margin: 20px 0; font-size: 16px; color: var(--gold-light);">
+          <div>Chambers Cleared: <span id="stats-chambers">0</span></div>
+          <div>Enemies Vanquished: <span id="stats-kills">0</span></div>
+          <div>Ashes Collected: <span id="stats-ashes">0</span></div>
+        </div>
+        <button id="return-crossroads-btn" class="hades-btn">RETURN TO CROSSROADS</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       HADES 2 ENGINE: PRE-RENDERED 3D, CHROMA KEY, PBR LIGHTING, WEB AUDIO
+       ========================================================================== */
+
+    // --- PROCEDURAL SOUND SYNTHESIS ENGINE (Web Audio API) ---
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = false;
+        this.bgmOscs = [];
+        this.bgmTimer = null;
+        this.step = 0;
+        this.init();
+      }
+
+      init() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          this.ctx = new AudioContext();
+        }
+      }
+
+      resume() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        return this.isMuted;
+      }
+
+      playSlash() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        // White noise blade swoosh
+        const bufferSize = Math.floor(this.ctx.sampleRate * 0.12);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1400, now);
+        filter.frequency.exponentialRampToValueAtTime(300, now + 0.12);
+        filter.Q.value = 3;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+        // Sine sub punch
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+        oscGain.gain.setValueAtTime(0.3, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx.destination);
+
+        noise.start(now);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      playDash() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      }
+
+      playCast() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        [220, 330, 440, 660].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.linearRampToValueAtTime(freq * 1.2, now + 0.3);
+          gain.gain.setValueAtTime(0.12 / (idx + 1), now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        });
+      }
+
+      playExplosion() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      playHit() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playLightning() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.linearRampToValueAtTime(120, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      playBoonChime() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C E G C E
+        notes.forEach((note, i) => {
+          const now = this.ctx.currentTime + i * 0.08;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(note, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.5);
+        });
+      }
+
+      playGold() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1760, now);
+        osc.frequency.setValueAtTime(2637, now + 0.05);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+
+      playDoorOpen() {
+        if (this.isMuted || !this.ctx) return;
+        this.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.4);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+
+      startBGM() {
+        if (this.bgmTimer) return;
+        this.bgmTimer = setInterval(() => {
+          if (this.isMuted || !this.ctx) return;
+          this.resume();
+          const now = this.ctx.currentTime;
+          // Driving 16-step dark synth bassline in E Phrygian (E, F, G, B)
+          const scale = [82.41, 87.31, 98.0, 123.47]; // E2, F2, G2, B2
+          const note = scale[Math.floor(this.step / 4) % scale.length];
+
+          // Kick / Sub pulse on beat
+          if (this.step % 4 === 0) {
+            const kick = this.ctx.createOscillator();
+            const kGain = this.ctx.createGain();
+            kick.frequency.setValueAtTime(110, now);
+            kick.frequency.exponentialRampToValueAtTime(35, now + 0.12);
+            kGain.gain.setValueAtTime(0.3, now);
+            kGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            kick.connect(kGain);
+            kGain.connect(this.ctx.destination);
+            kick.start(now);
+            kick.stop(now + 0.12);
+          }
+
+          // Synth bass
+          const bass = this.ctx.createOscillator();
+          const bGain = this.ctx.createGain();
+          bass.type = 'sawtooth';
+          bass.frequency.setValueAtTime(note, now);
+          bGain.gain.setValueAtTime(0.08, now);
+          bGain.gain.exponentialRampToValueAtTime(0.005, now + 0.1);
+          bass.connect(bGain);
+          bGain.connect(this.ctx.destination);
+          bass.start(now);
+          bass.stop(now + 0.1);
+
+          this.step = (this.step + 1) % 16;
+        }, 130);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // --- ASSET MANAGER & CHROMA KEY PIPELINE ---
+    class AssetManager {
+      constructor() {
+        this.rawImages = {};
+        this.keyedCanvases = {};
+        this.loadedCount = 0;
+        this.totalCount = 0;
+      }
+
+      loadImage(key, src) {
+        this.totalCount++;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = src;
+        img.onload = () => {
+          this.rawImages[key] = img;
+          this.keyedCanvases[key] = this.processChromaKey(img);
+          this.loadedCount++;
+        };
+        img.onerror = () => {
+          console.warn(`Could not load image ${src}, generating fallback texture.`);
+          const fallback = this.createFallbackImage(key);
+          this.rawImages[key] = fallback;
+          this.keyedCanvases[key] = fallback;
+          this.loadedCount++;
+        };
+      }
+
+      // Chroma-keying algorithm for bright magenta (#FF00FF)
+      processChromaKey(img) {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        try {
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          const len = data.length;
+
+          for (let i = 0; i < len; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // Detect magenta / hot pink: high red, low green, high blue
+            if (r > 160 && b > 160 && g < 115) {
+              const diff = (r + b) / 2 - g;
+              if (diff > 55) {
+                data[i + 3] = 0; // Transparent
+              } else if (diff > 35) {
+                // Feather edge & remove pink spill
+                data[i + 3] = Math.floor(255 * (1 - (diff - 35) / 20));
+                data[i] = g;
+                data[i + 2] = g;
+              }
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+        } catch (e) {
+          console.warn('Canvas pixel processing error (CORS fallback):', e);
+        }
+        return canvas;
+      }
+
+      createFallbackImage(key) {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 512;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#1e142e';
+        ctx.fillRect(0, 0, 512, 512);
+        ctx.fillStyle = '#e6b450';
+        ctx.font = '24px Cinzel';
+        ctx.textAlign = 'center';
+        ctx.fillText(key, 256, 256);
+        return c;
+      }
+    }
+
+    const assets = new AssetManager();
+    // Load pre-rendered 3D assets generated via Nano Banana
+    assets.loadImage('hero', './assets/hero.jpg');
+    assets.loadImage('shade', './assets/shade.jpg');
+    assets.loadImage('witch', './assets/witch.jpg');
+    assets.loadImage('chronos', './assets/chronos.jpg');
+    assets.loadImage('tiles', './assets/tiles.jpg');
+    assets.loadImage('props', './assets/props.jpg');
+    assets.loadImage('gods', './assets/gods.jpg');
+    assets.loadImage('ui', './assets/ui.jpg');
+    assets.loadImage('fx', './assets/fx.jpg');
+
+    // --- GAME ENGINE & STATE ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Input Manager
+    const keys = {};
+    const mouse = { x: canvas.width / 2, y: canvas.height / 2, leftDown: false, rightDown: false };
+
+    window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+      sound.resume();
+      sound.startBGM();
+
+      if (e.key.toLowerCase() === 'm') {
+        const muted = sound.toggleMute();
+        console.log('Audio muted:', muted);
+      }
+      if (e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'e') {
+        player.triggerCast();
+      }
+      if (e.key.toLowerCase() === ' ' || e.key.toLowerCase() === 'shift') {
+        player.triggerDash();
+      }
+      if (e.key.toLowerCase() === 'f') {
+        player.triggerHex();
+      }
+      if (e.key.toLowerCase() === 'j') {
+        player.triggerAttack();
+      }
+      if (e.key.toLowerCase() === 'k') {
+        player.triggerSpecial();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+
+    window.addEventListener('mousedown', (e) => {
+      sound.resume();
+      sound.startBGM();
+      if (e.button === 0) {
+        mouse.leftDown = true;
+        player.triggerAttack();
+      } else if (e.button === 2) {
+        mouse.rightDown = true;
+        player.triggerSpecial();
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 0) mouse.leftDown = false;
+      if (e.button === 2) mouse.rightDown = false;
+    });
+
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // --- GOD BOONS REGISTRY (Hades 2 Olympians) ---
+    const GODS = {
+      zeus: {
+        name: 'Zeus',
+        title: 'Lord of Olympus',
+        portraitIndex: 0, // col 0, row 0
+        color: '#facc15',
+        quotes: [
+          '"Take my lightning, niece. Smite the usurper of Time and light up the darkness!"',
+          '"A storm gathers in the Underworld. Let Chronos feel the wrath of Olympus!"'
+        ],
+        boons: [
+          { id: 'zeus_strike', name: 'Lightning Strike', slot: 'Attack', desc: 'Attacks call down chain lightning arcing between up to 4 enemies for 35 damage.' },
+          { id: 'zeus_ring', name: 'Storm Ring', slot: 'Cast', desc: 'Your Cast circle triggers repeating lightning bolts every 0.6s.' },
+          { id: 'zeus_dash', name: 'Static Dash', slot: 'Dash', desc: 'Dashing discharges a ring of electric spark bolts.' }
+        ]
+      },
+      hestia: {
+        name: 'Hestia',
+        title: 'Goddess of the Hearth',
+        portraitIndex: 1, // col 1, row 0
+        color: '#f97316',
+        quotes: [
+          '"Keep the hearth burning bright, child. Let us reduce these shades to ash!"',
+          '"A small ember is all it takes to consume the grandest halls of time."'
+        ],
+        boons: [
+          { id: 'hestia_strike', name: 'Flame Strike', slot: 'Attack', desc: 'Attacks inflict Scorch, dealing 60 damage over 3 seconds.' },
+          { id: 'hestia_ring', name: 'Smolder Ring', slot: 'Cast', desc: 'Your Cast circle ignites a continuous fire vortex that incinerates foes.' },
+          { id: 'hestia_dash', name: 'Searing Dash', slot: 'Dash', desc: 'Dash leaves a flaming path that burns enemies who step into it.' }
+        ]
+      },
+      poseidon: {
+        name: 'Poseidon',
+        title: 'Lord of the Seas',
+        portraitIndex: 2, // col 2, row 0
+        color: '#38bdf8',
+        quotes: [
+          '"Aha! Melinoë! Wash away these gloomy shades with the crushing power of the tides!"',
+          '"Let the depths rise and crush the ancient Titan into the reef!"'
+        ],
+        boons: [
+          { id: 'poseidon_strike', name: 'Wave Strike', slot: 'Attack', desc: 'Attacks blast enemies backward with heavy waves. Slashing foes into walls deals 80 wall-slam bonus damage!' },
+          { id: 'poseidon_ring', name: 'Flood Ring', slot: 'Cast', desc: 'Your Cast circle erupts into a violent geyser, knocking all snared foes outward.' },
+          { id: 'poseidon_dash', name: 'Tidal Dash', slot: 'Dash', desc: 'Dash unleashes a surging wave that propels you and slams enemies.' }
+        ]
+      },
+      apollo: {
+        name: 'Apollo',
+        title: 'God of Light',
+        portraitIndex: 3, // col 0, row 1
+        color: '#fde047',
+        quotes: [
+          '"Radiance to guide your blade, Melinoë. Let us shine bright upon the shadows!"',
+          '"Strike with solar brilliance and dazzle all who oppose your destiny."'
+        ],
+        boons: [
+          { id: 'apollo_strike', name: 'Nova Strike', slot: 'Attack', desc: 'Attacks have +75% wider sweep radius and inflict Dazzle (enemies miss attacks).' },
+          { id: 'apollo_ring', name: 'Solar Ring', slot: 'Cast', desc: 'Your Cast circle expands by +100% and triggers blinding solar flares.' },
+          { id: 'apollo_special', name: 'Sunburst Special', slot: 'Special', desc: 'Special sickle creates a blinding explosion at the apex of its throw.' }
+        ]
+      },
+      selene: {
+        name: 'Selene',
+        title: 'Goddess of the Moon',
+        portraitIndex: 4, // col 1, row 1
+        color: '#c084fc',
+        quotes: [
+          '"The silver light guides you in the darkest hour, Witch of the Crossroads."',
+          '"Invoke the Moon Hex, Melinoë, and pierce the shroud of Time itself."'
+        ],
+        boons: [
+          { id: 'selene_hex_ray', name: 'Lunar Ray', slot: 'Hex', desc: 'Fires a continuous devastating moonlight laser beam dealing 400 total damage!' },
+          { id: 'selene_hex_slow', name: 'Phase Shift', slot: 'Hex', desc: 'Slows down time for all enemies by 85% for 4 seconds.' },
+          { id: 'selene_hex_meteor', name: 'Total Eclipse', slot: 'Hex', desc: 'Calls down a colossal lunar meteor after 1s, dealing 600 area damage.' }
+        ]
+      }
+    };
+
+    // --- GAME STATE ---
+    const gameState = {
+      chamber: 1,
+      chamberType: 'normal', // 'normal', 'shop', 'boss'
+      enemiesCleared: false,
+      kills: 0,
+      totalAshes: 0,
+      totalBones: 0,
+      gold: 50,
+      ashes: 10,
+      bones: 5,
+      upgrades: {
+        maxHp: 0,      // +20 HP per level
+        magick: 0,     // +15 Magick per level
+        damage: 0,     // +10% damage per level
+        defiance: 1    // Death Defiance revives
+      },
+      equippedBoons: [],
+      particles: [],
+      projectiles: [],
+      enemies: [],
+      props: [],
+      lights: [],
+      camera: { x: 0, y: 0 },
+      isPaused: false
+    };
+
+    // --- PLAYER CLASS (Melinoë) ---
+    class Player {
+      constructor() {
+        this.x = 0;
+        this.y = 0;
+        this.radius = 22;
+        this.baseMaxHp = 100;
+        this.maxHp = 100;
+        this.hp = 100;
+        this.baseMagick = 50;
+        this.maxMagick = 50;
+        this.magick = 50;
+        this.speed = 310;
+        this.angle = 0;
+
+        // Combat timers
+        this.attackCombo = 0;
+        this.attackTimer = 0;
+        this.specialCooldown = 0;
+        this.dashCooldown = 0;
+        this.dashTimer = 0;
+        this.isDashing = false;
+        this.dashVx = 0;
+        this.dashVy = 0;
+        this.iFrames = 0;
+        this.castActive = null;
+        this.hexCharge = 0;
+        this.hexMax = 100;
+
+        // Animation state
+        this.animRow = 0; // 0: idle, 1: run, 2: attack, 3: cast/dash
+        this.animFrame = 0;
+        this.animTimer = 0;
+      }
+
+      resetForRun() {
+        this.maxHp = this.baseMaxHp + gameState.upgrades.maxHp * 20;
+        this.hp = this.maxHp;
+        this.maxMagick = this.baseMagick + gameState.upgrades.magick * 15;
+        this.magick = this.maxMagick;
+        this.x = 0;
+        this.y = 0;
+        this.hexCharge = 0;
+        this.castActive = null;
+        this.isDashing = false;
+        gameState.equippedBoons = [];
+        updateHUD();
+      }
+
+      update(dt) {
+        // Regenerate magick slowly
+        if (this.magick < this.maxMagick) {
+          this.magick = Math.min(this.maxMagick, this.magick + dt * 5);
+        }
+
+        // Handle i-frames
+        if (this.iFrames > 0) this.iFrames -= dt;
+        if (this.attackTimer > 0) this.attackTimer -= dt;
+        if (this.specialCooldown > 0) this.specialCooldown -= dt;
+        if (this.dashCooldown > 0) this.dashCooldown -= dt;
+
+        // Aim angle towards mouse in world coordinates
+        const worldMouseX = mouse.x + gameState.camera.x - canvas.width / 2;
+        const worldMouseY = mouse.y + gameState.camera.y - canvas.height / 2;
+        this.angle = Math.atan2(worldMouseY - this.y, worldMouseX - this.x);
+
+        // Movement
+        if (this.isDashing) {
+          this.dashTimer -= dt;
+          this.moveWithCollision(this.dashVx * dt, this.dashVy * dt);
+          // Spawn dash ghost particles
+          if (Math.random() < 0.6) {
+            gameState.particles.push(new Particle(this.x + (Math.random()-0.5)*20, this.y + (Math.random()-0.5)*20, 0, 0, '#2ae6b4', 20, 0.3, 'ghost'));
+          }
+          if (this.dashTimer <= 0) {
+            this.isDashing = false;
+          }
+        } else {
+          let moveX = 0;
+          let moveY = 0;
+          if (keys['w'] || keys['arrowup']) moveY -= 1;
+          if (keys['s'] || keys['arrowdown']) moveY += 1;
+          if (keys['a'] || keys['arrowleft']) moveX -= 1;
+          if (keys['d'] || keys['arrowright']) moveX += 1;
+
+          const len = Math.hypot(moveX, moveY);
+          if (len > 0) {
+            moveX /= len;
+            moveY /= len;
+            const currentSpeed = this.speed;
+            this.moveWithCollision(moveX * currentSpeed * dt, moveY * currentSpeed * dt);
+            this.animRow = 1; // Run animation
+          } else {
+            this.animRow = 0; // Idle animation
+          }
+
+          if (this.attackTimer > 0) {
+            this.animRow = 2; // Attack animation
+          }
+        }
+
+        // Animation frame stepping
+        this.animTimer += dt;
+        if (this.animTimer > 0.12) {
+          this.animTimer = 0;
+          this.animFrame = (this.animFrame + 1) % 4;
+        }
+
+        // Update active cast circle
+        if (this.castActive) {
+          this.castActive.timer -= dt;
+          if (this.castActive.timer <= 0) {
+            this.detonateCast();
+          }
+        }
+
+        // Update player light source
+        playerLight.x = this.x;
+        playerLight.y = this.y;
+      }
+
+      moveWithCollision(dx, dy) {
+        // Strict swept circle / AABB collision against chamber walls and pillars
+        const newX = this.x + dx;
+        const newY = this.y + dy;
+
+        if (!checkWallCollision(newX, this.y, this.radius)) {
+          this.x = newX;
+        }
+        if (!checkWallCollision(this.x, newY, this.radius)) {
+          this.y = newY;
+        }
+      }
+
+      triggerAttack() {
+        if (this.attackTimer > 0 || this.isDashing || gameState.isPaused) return;
+        this.attackTimer = 0.22;
+        this.attackCombo = (this.attackCombo + 1) % 3;
+        sound.playSlash();
+
+        // Calculate damage with upgrades and boons
+        let baseDmg = 35 + (this.attackCombo === 2 ? 25 : 0);
+        baseDmg *= (1 + gameState.upgrades.damage * 0.1);
+
+        const attackRange = hasBoon('apollo_strike') ? 110 : 75;
+        const attackArc = hasBoon('apollo_strike') ? Math.PI * 0.85 : Math.PI * 0.55;
+
+        // Visual Slash Wave FX
+        gameState.particles.push(new SlashEffect(this.x, this.y, this.angle, attackRange, this.attackCombo));
+
+        // Check hits on enemies
+        gameState.enemies.forEach(enemy => {
+          const dx = enemy.x - this.x;
+          const dy = enemy.y - this.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist <= attackRange + enemy.radius) {
+            const angleToEnemy = Math.atan2(dy, dx);
+            let angleDiff = Math.abs(angleToEnemy - this.angle);
+            if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+
+            if (angleDiff <= attackArc / 2) {
+              enemy.takeDamage(baseDmg, 'player');
+              sound.playHit();
+              this.hexCharge = Math.min(this.hexMax, this.hexCharge + 10);
+              updateHUD();
+
+              // Boon Procs
+              if (hasBoon('zeus_strike')) {
+                procChainLightning(enemy, 35);
+              }
+              if (hasBoon('hestia_strike')) {
+                enemy.applyScorch(60);
+              }
+              if (hasBoon('poseidon_strike')) {
+                const knockDist = 80;
+                const targetX = enemy.x + Math.cos(this.angle) * knockDist;
+                const targetY = enemy.y + Math.sin(this.angle) * knockDist;
+                if (checkWallCollision(targetX, targetY, enemy.radius)) {
+                  // Wall slam bonus
+                  enemy.takeDamage(80, 'slam');
+                  sound.playExplosion();
+                  createScreenShake(6);
+                } else {
+                  enemy.x = targetX;
+                  enemy.y = targetY;
+                }
+              }
+            }
+          }
+        });
+      }
+
+      triggerSpecial() {
+        if (this.specialCooldown > 0 || gameState.isPaused) return;
+        this.specialCooldown = 0.55;
+        sound.playSlash();
+
+        // Throw spinning Moon Sickle projectile
+        const spd = 520;
+        gameState.projectiles.push(new Projectile(
+          this.x, this.y,
+          Math.cos(this.angle) * spd,
+          Math.sin(this.angle) * spd,
+          45 * (1 + gameState.upgrades.damage * 0.1),
+          'moon_sickle',
+          this
+        ));
+      }
+
+      triggerCast() {
+        if (gameState.isPaused) return;
+        if (this.magick < 10 && !this.castActive) return;
+
+        if (!this.castActive) {
+          this.magick -= 10;
+          updateHUD();
+          sound.playCast();
+          const targetX = mouse.x + gameState.camera.x - canvas.width / 2;
+          const targetY = mouse.y + gameState.camera.y - canvas.height / 2;
+          const radius = hasBoon('apollo_ring') ? 160 : 110;
+          this.castActive = {
+            x: targetX,
+            y: targetY,
+            radius: radius,
+            timer: 3.0,
+            maxTimer: 3.0,
+            pulseTimer: 0
+          };
+        } else {
+          // Manual early detonation
+          this.detonateCast();
+        }
+      }
+
+      detonateCast() {
+        if (!this.castActive) return;
+        sound.playExplosion();
+        createScreenShake(8);
+        const radius = this.castActive.radius;
+        const dmg = 90 * (1 + gameState.upgrades.damage * 0.1);
+
+        gameState.enemies.forEach(enemy => {
+          const dist = Math.hypot(enemy.x - this.castActive.x, enemy.y - this.castActive.y);
+          if (dist <= radius + enemy.radius) {
+            enemy.takeDamage(dmg, 'cast');
+            if (hasBoon('hestia_ring')) enemy.applyScorch(90);
+            if (hasBoon('zeus_ring')) procChainLightning(enemy, 50);
+            if (hasBoon('poseidon_ring')) {
+              const ang = Math.atan2(enemy.y - this.castActive.y, enemy.x - this.castActive.x);
+              enemy.x += Math.cos(ang) * 90;
+              enemy.y += Math.sin(ang) * 90;
+            }
+          }
+        });
+
+        // Detonation visual blast
+        gameState.particles.push(new Shockwave(this.castActive.x, this.castActive.y, radius * 1.3, '#b356ff'));
+        this.castActive = null;
+      }
+
+      triggerDash() {
+        if (this.dashCooldown > 0 || this.isDashing || gameState.isPaused) return;
+        this.dashCooldown = 0.45;
+        this.dashTimer = 0.18;
+        this.isDashing = true;
+        this.iFrames = 0.25;
+        sound.playDash();
+
+        let moveX = 0;
+        let moveY = 0;
+        if (keys['w'] || keys['arrowup']) moveY -= 1;
+        if (keys['s'] || keys['arrowdown']) moveY += 1;
+        if (keys['a'] || keys['arrowleft']) moveX -= 1;
+        if (keys['d'] || keys['arrowright']) moveX += 1;
+
+        if (moveX === 0 && moveY === 0) {
+          moveX = Math.cos(this.angle);
+          moveY = Math.sin(this.angle);
+        } else {
+          const len = Math.hypot(moveX, moveY);
+          moveX /= len;
+          moveY /= len;
+        }
+
+        const dashSpeed = 750;
+        this.dashVx = moveX * dashSpeed;
+        this.dashVy = moveY * dashSpeed;
+
+        // Boon Dash Effects
+        if (hasBoon('zeus_dash')) {
+          sound.playLightning();
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*300, Math.sin(a)*300, 25, 'spark', this));
+          }
+        }
+        if (hasBoon('hestia_dash')) {
+          gameState.particles.push(new FireTrail(this.x, this.y));
+        }
+        if (hasBoon('poseidon_dash')) {
+          gameState.particles.push(new Shockwave(this.x, this.y, 60, '#38bdf8'));
+        }
+      }
+
+      triggerHex() {
+        if (this.hexCharge < this.hexMax || gameState.isPaused) return;
+        this.hexCharge = 0;
+        updateHUD();
+        sound.playExplosion();
+        createScreenShake(14);
+
+        if (hasBoon('selene_hex_ray')) {
+          // Lunar Ray
+          const rayLength = 650;
+          for (let i = 0; i < 15; i++) {
+            setTimeout(() => {
+              gameState.enemies.forEach(e => {
+                const dist = Math.hypot(e.x - this.x, e.y - this.y);
+                if (dist < rayLength) {
+                  const ang = Math.atan2(e.y - this.y, e.x - this.x);
+                  if (Math.abs(ang - this.angle) < 0.3) {
+                    e.takeDamage(35, 'hex');
+                  }
+                }
+              });
+            }, i * 30);
+          }
+          gameState.particles.push(new LunarRayEffect(this.x, this.y, this.angle, rayLength));
+        } else if (hasBoon('selene_hex_slow')) {
+          // Time Slow
+          gameState.enemies.forEach(e => e.timeSlowTimer = 4.0);
+          gameState.particles.push(new Shockwave(this.x, this.y, 500, '#c084fc'));
+        } else {
+          // Default Moon Meteor
+          const targetX = mouse.x + gameState.camera.x - canvas.width / 2;
+          const targetY = mouse.y + gameState.camera.y - canvas.height / 2;
+          setTimeout(() => {
+            sound.playExplosion();
+            createScreenShake(16);
+            gameState.enemies.forEach(e => {
+              if (Math.hypot(e.x - targetX, e.y - targetY) < 180) {
+                e.takeDamage(400, 'hex');
+              }
+            });
+            gameState.particles.push(new Shockwave(targetX, targetY, 180, '#fef08a'));
+          }, 600);
+        }
+      }
+
+      takeDamage(amount) {
+        if (this.iFrames > 0 || gameState.isPaused) return;
+        this.hp -= amount;
+        this.iFrames = 0.6;
+        sound.playHit();
+        createScreenShake(8);
+        updateHUD();
+
+        gameState.particles.push(new FloatingText(this.x, this.y - 20, `-${amount}`, '#ef4444'));
+
+        if (this.hp <= 0) {
+          if (gameState.upgrades.defiance > 0) {
+            gameState.upgrades.defiance--;
+            this.hp = Math.floor(this.maxHp * 0.5);
+            this.iFrames = 2.0;
+            sound.playBoonChime();
+            gameState.particles.push(new Shockwave(this.x, this.y, 250, '#f59e0b'));
+            gameState.particles.push(new FloatingText(this.x, this.y - 40, 'DEATH DEFIED!', '#f59e0b'));
+            updateHUD();
+          } else {
+            handleGameOver(false);
+          }
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Cast Circle Draw
+        if (this.castActive) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(this.castActive.x - this.x, this.castActive.y - this.y, this.castActive.radius, 0, Math.PI * 2);
+          ctx.strokeStyle = '#b356ff';
+          ctx.lineWidth = 3;
+          ctx.fillStyle = 'rgba(179, 86, 255, 0.15)';
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Draw shadow beneath player
+        ctx.beginPath();
+        ctx.ellipse(0, 18, 20, 10, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.fill();
+
+        // Draw pre-rendered 3D hero sprite
+        const sprite = assets.keyedCanvases['hero'];
+        if (sprite) {
+          // 4x4 grid in hero.jpg
+          const cellW = sprite.width / 4;
+          const cellH = sprite.height / 4;
+          const sx = this.animFrame * cellW;
+          const sy = this.animRow * cellH;
+
+          // Flip horizontally if aiming left
+          const facingLeft = Math.cos(this.angle) < 0;
+          if (facingLeft) ctx.scale(-1, 1);
+
+          ctx.drawImage(sprite, sx, sy, cellW, cellH, -42, -56, 84, 84);
+        } else {
+          // Fallback circle
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = '#2ae6b4';
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    const player = new Player();
+
+    // --- LIGHTING ENGINE (2D Multi-Point PBR Dynamic Lights) ---
+    class PointLight {
+      constructor(x, y, radius, color, intensity = 1.0) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+        this.intensity = intensity;
+      }
+    }
+
+    const playerLight = new PointLight(0, 0, 240, 'rgba(42, 230, 180, 0.35)');
+
+    // --- ENEMY CLASSES ---
+    class Enemy {
+      constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type; // 'shade', 'witch', 'chronos'
+        this.radius = type === 'chronos' ? 52 : (type === 'witch' ? 24 : 22);
+        this.maxHp = type === 'chronos' ? 2400 : (type === 'witch' ? 140 : 90);
+        this.hp = this.maxHp;
+        this.speed = type === 'chronos' ? 95 : (type === 'witch' ? 120 : 170);
+        this.state = 'idle';
+        this.stateTimer = 0;
+        this.attackCooldown = 0;
+        this.scorchStacks = 0;
+        this.scorchTimer = 0;
+        this.timeSlowTimer = 0;
+        this.animFrame = 0;
+        this.animRow = 0;
+        this.animTimer = 0;
+        this.angle = 0;
+      }
+
+      update(dt) {
+        // Handle time slow
+        const effectiveDt = this.timeSlowTimer > 0 ? dt * 0.15 : dt;
+        if (this.timeSlowTimer > 0) this.timeSlowTimer -= dt;
+
+        // Scorch DoT
+        if (this.scorchTimer > 0) {
+          this.scorchTimer -= dt;
+          this.takeDamage(this.scorchStacks * dt, 'scorch', true);
+        }
+
+        // Snare inside Player's Cast
+        let moveSpeed = this.speed;
+        if (player.castActive) {
+          const dToCast = Math.hypot(this.x - player.castActive.x, this.y - player.castActive.y);
+          if (dToCast <= player.castActive.radius) {
+            moveSpeed *= 0.35; // Snare
+          }
+        }
+
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        this.angle = Math.atan2(dy, dx);
+
+        if (this.attackCooldown > 0) this.attackCooldown -= effectiveDt;
+
+        // State Machine AI
+        if (this.type === 'shade') {
+          // Melee shade wretch
+          if (dist > 50) {
+            const vx = (dx / dist) * moveSpeed;
+            const vy = (dy / dist) * moveSpeed;
+            this.moveWithCollision(vx * effectiveDt, vy * effectiveDt);
+            this.animRow = 1;
+          } else {
+            this.animRow = 0;
+            if (this.attackCooldown <= 0) {
+              this.attackCooldown = 1.2;
+              this.animRow = 2;
+              setTimeout(() => {
+                if (Math.hypot(player.x - this.x, player.y - this.y) < 65) {
+                  player.takeDamage(18);
+                }
+              }, 300);
+            }
+          }
+        } else if (this.type === 'witch') {
+          // Ranged witch siren
+          if (dist < 180) {
+            // Back away
+            this.moveWithCollision(-(dx / dist) * moveSpeed * effectiveDt, -(dy / dist) * moveSpeed * effectiveDt);
+          } else if (dist > 320) {
+            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          }
+          this.animRow = 1;
+
+          if (this.attackCooldown <= 0 && dist < 450) {
+            this.attackCooldown = 2.4;
+            this.animRow = 2;
+            sound.playCast();
+            // Fire tracking arcane orb
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle)*220, Math.sin(this.angle)*220, 22, 'witch_orb', this));
+          }
+        } else if (this.type === 'chronos') {
+          // Boss Titan Chronos
+          updateBossHUD(this);
+          if (dist > 90) {
+            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+            this.animRow = 1;
+          }
+
+          if (this.attackCooldown <= 0) {
+            this.attackCooldown = 2.8;
+            this.animRow = 2;
+            // Telegraph attack
+            sound.playSlash();
+            createScreenShake(10);
+            // Colossal scythe sweep & time waves
+            setTimeout(() => {
+              if (Math.hypot(player.x - this.x, player.y - this.y) < 140) {
+                player.takeDamage(35);
+              }
+              // Spawn 8 time shards in all directions
+              for (let i = 0; i < 8; i++) {
+                const a = (i / 8) * Math.PI * 2;
+                gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*260, Math.sin(a)*260, 24, 'time_shard', this));
+              }
+            }, 500);
+          }
+        }
+
+        // Animation step
+        this.animTimer += effectiveDt;
+        if (this.animTimer > 0.15) {
+          this.animTimer = 0;
+          this.animFrame = (this.animFrame + 1) % 3;
+        }
+      }
+
+      moveWithCollision(dx, dy) {
+        const newX = this.x + dx;
+        const newY = this.y + dy;
+        if (!checkWallCollision(newX, this.y, this.radius)) this.x = newX;
+        if (!checkWallCollision(this.x, newY, this.radius)) this.y = newY;
+      }
+
+      applyScorch(amount) {
+        this.scorchStacks += amount;
+        this.scorchTimer = 3.0;
+      }
+
+      takeDamage(amount, source = 'normal', silent = false) {
+        const intDmg = Math.round(amount);
+        this.hp -= intDmg;
+
+        if (!silent) {
+          const color = source === 'slam' ? '#38bdf8' : (source === 'hex' ? '#fde047' : (source === 'cast' ? '#c084fc' : '#ffffff'));
+          gameState.particles.push(new FloatingText(this.x + (Math.random()-0.5)*20, this.y - 20, `${intDmg}`, color));
+        }
+
+        if (this.hp <= 0) {
+          this.die();
+        }
+      }
+
+      die() {
+        const idx = gameState.enemies.indexOf(this);
+        if (idx !== -1) {
+          gameState.enemies.splice(idx, 1);
+          gameState.kills++;
+          sound.playHit();
+
+          // Drop currencies & rewards
+          const obols = Math.floor(Math.random() * 6) + 4;
+          gameState.gold += obols;
+          gameState.ashes += 2;
+          sound.playGold();
+          updateHUD();
+
+          gameState.particles.push(new Shockwave(this.x, this.y, this.radius * 2, '#2ae6b4'));
+
+          if (this.type === 'chronos') {
+            document.getElementById('boss-hud').style.display = 'none';
+            handleGameOver(true);
+          } else if (gameState.enemies.length === 0) {
+            onChamberCleared();
+          }
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Shadow
+        ctx.beginPath();
+        ctx.ellipse(0, this.radius * 0.7, this.radius, this.radius * 0.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fill();
+
+        // Sprite draw
+        const assetKey = this.type === 'shade' ? 'shade' : (this.type === 'witch' ? 'witch' : 'chronos');
+        const sprite = assets.keyedCanvases[assetKey];
+        if (sprite) {
+          const cellW = sprite.width / 3;
+          const cellH = sprite.height / 3;
+          const sx = this.animFrame * cellW;
+          const sy = this.animRow * cellH;
+
+          const facingLeft = Math.cos(this.angle) < 0;
+          if (facingLeft) ctx.scale(-1, 1);
+
+          const drawSize = this.radius * 3.6;
+          ctx.drawImage(sprite, sx, sy, cellW, cellH, -drawSize/2, -drawSize/2, drawSize, drawSize);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = this.type === 'chronos' ? '#eab308' : (this.type === 'witch' ? '#9333ea' : '#06b6d4');
+          ctx.fill();
+        }
+
+        // Overhead health bar
+        if (this.type !== 'chronos') {
+          const barW = 40;
+          const barH = 5;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(-barW/2, -this.radius - 12, barW, barH);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-barW/2, -this.radius - 12, (this.hp / this.maxHp) * barW, barH);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // --- PROJECTILE CLASS ---
+    class Projectile {
+      constructor(x, y, vx, vy, damage, type, owner) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.damage = damage;
+        this.type = type; // 'moon_sickle', 'witch_orb', 'time_shard', 'spark'
+        this.owner = owner;
+        this.radius = type === 'moon_sickle' ? 18 : 10;
+        this.lifetime = type === 'moon_sickle' ? 1.2 : 3.0;
+        this.angle = 0;
+      }
+
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.lifetime -= dt;
+        this.angle += dt * 15;
+
+        // Return sickle to player on second half of lifetime
+        if (this.type === 'moon_sickle' && this.lifetime < 0.6) {
+          const dx = player.x - this.x;
+          const dy = player.y - this.y;
+          const dist = Math.hypot(dx, dy);
+          this.vx = (dx / dist) * 600;
+          this.vy = (dy / dist) * 600;
+        }
+
+        // Collision with walls
+        if (checkWallCollision(this.x, this.y, this.radius)) {
+          this.destroy();
+          return;
+        }
+
+        // Hit checks
+        if (this.owner === player) {
+          gameState.enemies.forEach(enemy => {
+            if (Math.hypot(enemy.x - this.x, enemy.y - this.y) <= this.radius + enemy.radius) {
+              enemy.takeDamage(this.damage, 'projectile');
+              sound.playHit();
+              if (this.type !== 'moon_sickle') this.destroy();
+            }
+          });
+        } else {
+          if (Math.hypot(player.x - this.x, player.y - this.y) <= this.radius + player.radius) {
+            player.takeDamage(this.damage);
+            this.destroy();
+          }
+        }
+      }
+
+      destroy() {
+        const idx = gameState.projectiles.indexOf(this);
+        if (idx !== -1) gameState.projectiles.splice(idx, 1);
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        if (this.type === 'moon_sickle') {
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(0, 0, 16, 0, Math.PI * 1.3);
+          ctx.stroke();
+        } else if (this.type === 'witch_orb') {
+          ctx.fillStyle = '#a855f7';
+          ctx.beginPath();
+          ctx.arc(0, 0, 8, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'time_shard') {
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.moveTo(12, 0);
+          ctx.lineTo(-8, -6);
+          ctx.lineTo(-8, 6);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(0, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // --- VISUAL FX & PARTICLES ---
+    class Particle {
+      constructor(x, y, vx, vy, color, size, life, type = 'normal') {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.size = size;
+        this.life = life;
+        this.maxLife = life;
+        this.type = type;
+      }
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.life -= dt;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class Shockwave {
+      constructor(x, y, maxRadius, color) {
+        this.x = x;
+        this.y = y;
+        this.radius = 5;
+        this.maxRadius = maxRadius;
+        this.color = color;
+        this.life = 0.4;
+        this.maxLife = 0.4;
+      }
+      update(dt) {
+        this.life -= dt;
+        this.radius += (this.maxRadius / this.maxLife) * dt;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class SlashEffect {
+      constructor(x, y, angle, range, combo) {
+        this.x = x;
+        this.y = y;
+        this.angle = angle;
+        this.range = range;
+        this.combo = combo;
+        this.life = 0.18;
+        this.maxLife = 0.18;
+      }
+      update(dt) {
+        this.life -= dt;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.strokeStyle = this.combo === 2 ? '#facc15' : '#2ae6b4';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.range, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class LunarRayEffect {
+      constructor(x, y, angle, length) {
+        this.x = x;
+        this.y = y;
+        this.angle = angle;
+        this.length = length;
+        this.life = 0.5;
+        this.maxLife = 0.5;
+      }
+      update(dt) {
+        this.life -= dt;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 24;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(this.length, 0);
+        ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 10;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class FireTrail {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.life = 2.0;
+      }
+      update(dt) {
+        this.life -= dt;
+        gameState.enemies.forEach(e => {
+          if (Math.hypot(e.x - this.x, e.y - this.y) < 35) {
+            e.takeDamage(40 * dt, 'scorch', true);
+          }
+        });
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.4)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class FloatingText {
+      constructor(x, y, text, color) {
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.color = color;
+        this.life = 0.8;
+      }
+      update(dt) {
+        this.y -= 40 * dt;
+        this.life -= dt;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life / 0.8);
+        ctx.font = 'bold 16px Cinzel';
+        ctx.fillStyle = this.color;
+        ctx.textAlign = 'center';
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.restore();
+      }
+    }
+
+    // --- DUNGEON & COLLISION SYSTEM ---
+    const arena = {
+      width: 1400,
+      height: 900,
+      pillars: [
+        { x: -350, y: -200, radius: 36 },
+        { x: 350, y: -200, radius: 36 },
+        { x: -350, y: 200, radius: 36 },
+        { x: 350, y: 200, radius: 36 }
+      ],
+      door: { x: 0, y: -420, radius: 45, isOpen: false }
+    };
+
+    function checkWallCollision(x, y, radius) {
+      const halfW = arena.width / 2;
+      const halfH = arena.height / 2;
+      // Outer chamber perimeter walls
+      if (x - radius < -halfW || x + radius > halfW || y - radius < -halfH || y + radius > halfH) {
+        return true;
+      }
+      // Pillars
+      for (const pillar of arena.pillars) {
+        if (Math.hypot(x - pillar.x, y - pillar.y) < radius + pillar.radius) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function createScreenShake(intensity) {
+      screenShake = intensity;
+    }
+    let screenShake = 0;
+
+    // --- BOON SYSTEM HELPERS ---
+    function hasBoon(boonId) {
+      return gameState.equippedBoons.some(b => b.id === boonId);
+    }
+
+    function procChainLightning(initialEnemy, damage) {
+      sound.playLightning();
+      let current = initialEnemy;
+      const hitList = [current];
+
+      for (let step = 0; step < 3; step++) {
+        let closest = null;
+        let minDist = 220;
+        gameState.enemies.forEach(e => {
+          if (!hitList.includes(e)) {
+            const d = Math.hypot(e.x - current.x, e.y - current.y);
+            if (d < minDist) {
+              minDist = d;
+              closest = e;
+            }
+          }
+        });
+
+        if (closest) {
+          closest.takeDamage(damage, 'lightning');
+          gameState.particles.push(new Particle((current.x + closest.x)/2, (current.y + closest.y)/2, 0, 0, '#facc15', 12, 0.2));
+          hitList.push(closest);
+          current = closest;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // --- CHAMBER PROGRESSION ---
+    function startChamber(chamberIndex) {
+      gameState.chamber = chamberIndex;
+      gameState.enemiesCleared = false;
+      arena.door.isOpen = false;
+      gameState.projectiles = [];
+      gameState.particles = [];
+      player.x = 0;
+      player.y = 300;
+
+      const titleEl = document.getElementById('chamber-name');
+      const subEl = document.getElementById('chamber-sub');
+
+      if (chamberIndex === 5) {
+        // Boss Chamber (Chronos)
+        gameState.chamberType = 'boss';
+        titleEl.innerText = 'HOUSE OF CHRONOS — BOSS CHAMBER';
+        subEl.innerText = 'The Titan of Time';
+        document.getElementById('boss-hud').style.display = 'flex';
+        gameState.enemies = [new Enemy(0, -180, 'chronos')];
+      } else if (chamberIndex === 4) {
+        // Charon Crossing Shop
+        gameState.chamberType = 'shop';
+        titleEl.innerText = 'CHARON’S CROSSING — SHOP';
+        subEl.innerText = 'Safe Haven';
+        gameState.enemies = [];
+        gameState.enemiesCleared = true;
+        arena.door.isOpen = true;
+        // Prompt Boon Reward or Shop
+        showBoonSelection('hermes');
+      } else {
+        // Normal combat chamber
+        gameState.chamberType = 'normal';
+        titleEl.innerText = `EREBUS — CHAMBER ${chamberIndex}`;
+        subEl.innerText = 'Underworld Depths';
+
+        const count = 3 + chamberIndex * 2;
+        gameState.enemies = [];
+        for (let i = 0; i < count; i++) {
+          const type = Math.random() < 0.35 ? 'witch' : 'shade';
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 220 + Math.random() * 250;
+          gameState.enemies.push(new Enemy(Math.cos(angle) * dist, Math.sin(angle) * dist, type));
+        }
+      }
+
+      updateHUD();
+    }
+
+    function onChamberCleared() {
+      gameState.enemiesCleared = true;
+      arena.door.isOpen = true;
+      sound.playBoonChime();
+      sound.playDoorOpen();
+
+      // Pick a random god for Boon reward
+      const godKeys = ['zeus', 'hestia', 'poseidon', 'apollo', 'selene'];
+      const chosenGod = godKeys[Math.floor(Math.random() * godKeys.length)];
+      setTimeout(() => {
+        showBoonSelection(chosenGod);
+      }, 600);
+    }
+
+    function showBoonSelection(godKey) {
+      gameState.isPaused = true;
+      const god = GODS[godKey] || GODS['zeus'];
+      const modal = document.getElementById('boon-modal');
+      const portraitCanvas = document.getElementById('god-portrait-canvas');
+      const pctx = portraitCanvas.getContext('2d');
+      pctx.clearRect(0, 0, 140, 140);
+
+      // Draw pre-rendered God Portrait from gods.jpg sheet
+      const sprite = assets.keyedCanvases['gods'];
+      if (sprite) {
+        // 3 cols, 2 rows
+        const col = god.portraitIndex % 3;
+        const row = Math.floor(god.portraitIndex / 3);
+        const cw = sprite.width / 3;
+        const ch = sprite.height / 2;
+        pctx.drawImage(sprite, col * cw, row * ch, cw, ch, 0, 0, 140, 140);
+      } else {
+        pctx.fillStyle = god.color;
+        pctx.fillRect(0, 0, 140, 140);
+      }
+
+      document.getElementById('god-name').innerText = `${god.name.toUpperCase()} — ${god.title.toUpperCase()}`;
+      document.getElementById('god-quote').innerText = god.quotes[Math.floor(Math.random() * god.quotes.length)];
+
+      const container = document.getElementById('boon-choices-container');
+      container.innerHTML = '';
+
+      god.boons.forEach(boon => {
+        const card = document.createElement('div');
+        card.className = 'boon-card';
+        card.innerHTML = `
+          <div>
+            <div class="boon-rarity rarity-rare">RARE BOON</div>
+            <div class="boon-card-name">${boon.name}</div>
+            <div class="boon-card-desc">${boon.desc}</div>
+          </div>
+          <div class="boon-card-slot">Slot: ${boon.slot}</div>
+        `;
+        card.onclick = () => {
+          gameState.equippedBoons.push({ ...boon, godName: god.name });
+          modal.style.display = 'none';
+          gameState.isPaused = false;
+          sound.playBoonChime();
+          updateHUD();
+        };
+        container.appendChild(card);
+      });
+
+      modal.style.display = 'flex';
+    }
+
+    function handleGameOver(isVictory) {
+      gameState.isPaused = true;
+      const modal = document.getElementById('gameover-modal');
+      const title = document.getElementById('gameover-title');
+      const sub = document.getElementById('gameover-subtitle');
+
+      if (isVictory) {
+        title.innerText = 'VICTORY ACHIEVED!';
+        title.style.color = '#fde047';
+        sub.innerText = 'Chronos has been vanquished. The Underworld is reclaimed!';
+      } else {
+        title.innerText = 'THERE IS NO ESCAPE';
+        title.style.color = '#ef4444';
+        sub.innerText = 'Melinoë falls in battle. Return to the Altar of Ashes to grow stronger.';
+      }
+
+      document.getElementById('stats-chambers').innerText = gameState.chamber;
+      document.getElementById('stats-kills').innerText = gameState.kills;
+      document.getElementById('stats-ashes').innerText = gameState.ashes;
+
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('return-crossroads-btn').onclick = () => {
+      document.getElementById('gameover-modal').style.display = 'none';
+      openAltarOfAshes();
+    };
+
+    function openAltarOfAshes() {
+      gameState.isPaused = true;
+      const modal = document.getElementById('altar-modal');
+      const grid = document.getElementById('altar-items-grid');
+      grid.innerHTML = '';
+
+      const upgrades = [
+        { key: 'maxHp', title: 'Titanic Vitality', desc: '+20 Max Health per rank', cost: 5 },
+        { key: 'magick', title: 'Arcane Pool', desc: '+15 Max Magick per rank', cost: 5 },
+        { key: 'damage', title: 'Witchcraft Might', desc: '+10% All Damage per rank', cost: 8 },
+        { key: 'defiance', title: 'Death Defiance', desc: '+1 Revive on Death', cost: 12 }
+      ];
+
+      upgrades.forEach(u => {
+        const card = document.createElement('div');
+        card.className = 'altar-card';
+        card.innerHTML = `
+          <div class="altar-info">
+            <h4>${u.title} (Lvl ${gameState.upgrades[u.key]})</h4>
+            <p>${u.desc}</p>
+          </div>
+          <button class="hades-btn" style="padding: 6px 14px; font-size: 12px;">${u.cost} 🌪️ Upgrade</button>
+        `;
+        card.querySelector('button').onclick = () => {
+          if (gameState.ashes >= u.cost) {
+            gameState.ashes -= u.cost;
+            gameState.upgrades[u.key]++;
+            sound.playBoonChime();
+            openAltarOfAshes();
+            updateHUD();
+          }
+        };
+        grid.appendChild(card);
+      });
+
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('start-run-btn').onclick = () => {
+      document.getElementById('altar-modal').style.display = 'none';
+      gameState.isPaused = false;
+      player.resetForRun();
+      startChamber(1);
+    };
+
+    // --- HUD UPDATES ---
+    function updateHUD() {
+      document.getElementById('hp-bar').style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+      document.getElementById('hp-text').innerText = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+      document.getElementById('magick-bar').style.width = `${Math.max(0, (player.magick / player.maxMagick) * 100)}%`;
+      document.getElementById('magick-text').innerText = `${Math.ceil(player.magick)} / ${player.maxMagick}`;
+
+      document.getElementById('gold-count').innerText = gameState.gold;
+      document.getElementById('ash-count').innerText = gameState.ashes;
+      document.getElementById('bones-count').innerText = gameState.bones;
+
+      // Hex Gauge
+      const hexEl = document.getElementById('hex-gauge');
+      if (player.hexCharge >= player.hexMax) {
+        hexEl.classList.add('ready');
+      } else {
+        hexEl.classList.remove('ready');
+      }
+
+      // Active Boons List
+      const boonsList = document.getElementById('active-boons');
+      boonsList.innerHTML = '';
+      gameState.equippedBoons.forEach(b => {
+        const item = document.createElement('div');
+        item.className = 'boon-badge';
+        item.innerHTML = `
+          <div>
+            <div class="boon-badge-god">${b.godName}</div>
+            <div class="boon-badge-name">${b.name}</div>
+          </div>
+        `;
+        boonsList.appendChild(item);
+      });
+    }
+
+    function updateBossHUD(boss) {
+      const hpPct = Math.max(0, (boss.hp / boss.maxHp) * 100);
+      document.getElementById('boss-hp-bar').style.width = `${hpPct}%`;
+    }
+
+    // --- MAIN RENDER LOOP ---
+    let lastTime = performance.now();
+
+    function gameLoop(time) {
+      const dt = Math.min((time - lastTime) / 1000, 0.1);
+      lastTime = time;
+
+      if (!gameState.isPaused) {
+        // Update player
+        player.update(dt);
+
+        // Update enemies
+        gameState.enemies.forEach(e => e.update(dt));
+
+        // Update projectiles
+        gameState.projectiles.forEach(p => p.update(dt));
+
+        // Update particles
+        gameState.particles.forEach(p => p.update(dt));
+        gameState.particles = gameState.particles.filter(p => p.life > 0);
+
+        // Check chamber exit door collision
+        if (arena.door.isOpen) {
+          if (Math.hypot(player.x - arena.door.x, player.y - arena.door.y) < arena.door.radius + player.radius) {
+            startChamber(gameState.chamber + 1);
+          }
+        }
+
+        // Camera follow player
+        gameState.camera.x += (player.x - gameState.camera.x) * 0.1;
+        gameState.camera.y += (player.y - gameState.camera.y) * 0.1;
+      }
+
+      // Screen shake decay
+      let shakeX = 0;
+      let shakeY = 0;
+      if (screenShake > 0) {
+        shakeX = (Math.random() - 0.5) * screenShake;
+        shakeY = (Math.random() - 0.5) * screenShake;
+        screenShake = Math.max(0, screenShake - dt * 30);
+      }
+
+      // --- RENDERING ---
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(canvas.width / 2 - gameState.camera.x + shakeX, canvas.height / 2 - gameState.camera.y + shakeY);
+
+      // 1. Draw Floor Tiles
+      drawChamberFloor(ctx);
+
+      // 2. Draw Props & Obstacles
+      drawProps(ctx);
+
+      // 3. Draw Particles (Lower layer)
+      gameState.particles.forEach(p => { if (p instanceof FireTrail) p.draw(ctx); });
+
+      // 4. Draw Enemies
+      gameState.enemies.forEach(e => e.draw(ctx));
+
+      // 5. Draw Player
+      player.draw(ctx);
+
+      // 6. Draw Projectiles
+      gameState.projectiles.forEach(p => p.draw(ctx));
+
+      // 7. Draw Upper Particles & FX
+      gameState.particles.forEach(p => { if (!(p instanceof FireTrail)) p.draw(ctx); });
+
+      // 8. Dynamic 2D Lighting & Ambient Darkness Layer
+      drawDynamicLighting(ctx);
+
+      ctx.restore();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function drawChamberFloor(ctx) {
+      const halfW = arena.width / 2;
+      const halfH = arena.height / 2;
+
+      // Base stone floor
+      const tileSprite = assets.keyedCanvases['tiles'];
+      if (tileSprite) {
+        const pattern = ctx.createPattern(tileSprite, 'repeat');
+        ctx.fillStyle = pattern;
+      } else {
+        ctx.fillStyle = '#140f1d';
+      }
+      ctx.fillRect(-halfW, -halfH, arena.width, arena.height);
+
+      // Floor grid accents
+      ctx.strokeStyle = 'rgba(230, 180, 80, 0.12)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-halfW, -halfH, arena.width, arena.height);
+
+      // Chamber center golden glyph
+      ctx.beginPath();
+      ctx.arc(0, 0, 180, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(230, 180, 80, 0.2)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Outer impassable walls
+      ctx.lineWidth = 18;
+      ctx.strokeStyle = '#2b1b0e';
+      ctx.strokeRect(-halfW - 9, -halfH - 9, arena.width + 18, arena.height + 18);
+    }
+
+    function drawProps(ctx) {
+      // Draw Pillars
+      arena.pillars.forEach(pillar => {
+        ctx.beginPath();
+        ctx.ellipse(pillar.x, pillar.y + 16, pillar.radius * 1.1, pillar.radius * 0.6, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(pillar.x, pillar.y, pillar.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#3a2d21';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#e6b450';
+        ctx.stroke();
+
+        // Pillar Torch glow
+        ctx.beginPath();
+        ctx.arc(pillar.x, pillar.y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#2ae6b4';
+        ctx.fill();
+      });
+
+      // Exit Gateway Door
+      const door = arena.door;
+      ctx.save();
+      ctx.translate(door.x, door.y);
+      ctx.beginPath();
+      ctx.arc(0, 0, door.radius, Math.PI, 0);
+      ctx.fillStyle = door.isOpen ? '#2ae6b4' : '#2a1a12';
+      ctx.fill();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = door.isOpen ? '#fff2a8' : '#8c5b16';
+      ctx.stroke();
+      if (door.isOpen) {
+        ctx.font = 'bold 13px Cinzel';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText('ENTER CHAMBER', 0, -10);
+      }
+      ctx.restore();
+    }
+
+    function drawDynamicLighting(ctx) {
+      // Dynamic ambient darkness overlay
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      const halfW = arena.width / 2 + 300;
+      const halfH = arena.height / 2 + 300;
+
+      // Dark underworld gloom
+      ctx.fillStyle = 'rgba(6, 4, 10, 0.62)';
+      ctx.fillRect(-halfW, -halfH, halfW * 2, halfH * 2);
+
+      // Light cutouts & glowing highlights (destination-out & screen blend)
+      ctx.globalCompositeOperation = 'destination-out';
+
+      // Player light
+      const grad = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, playerLight.radius);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, playerLight.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pillar torch lights
+      arena.pillars.forEach(p => {
+        const pGrad = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, 160);
+        pGrad.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+        pGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = pGrad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 160, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+    }
+
+    // Start initial run
+    player.resetForRun();
+    startChamber(1);
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
