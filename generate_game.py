@@ -2,13 +2,12 @@ import json
 import base64
 import os
 
-with open('process_assets.py', 'r') as f:
-    pass
-
+# Asset loading
 assets_keys = [
     'hero', 'shade', 'witch', 'chronos',
-    'consistent_tiles', 'props', 'gods', 'ui',
-    'fx', 'attack_fx_anim'
+    'consistent_tiles', 'seamless_floor', 'props', 'ui',
+    'clean_fx', 'attack_fx_anim',
+    'all_10_gods', 'monsters_beasts', 'undead_cultists', 'new_projectiles'
 ]
 
 b64_data = {}
@@ -20,13 +19,12 @@ for k in assets_keys:
 
 print(f"Loaded {len(b64_data)} assets into memory.")
 
-# Now write out index.html
 html_template = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>HADES II: CHRONOS FALL - Pre-rendered 3D Roguelike</title>
+  <title>HADES II: CHRONOS FALL - Pre-rendered 3D Roguelike (Complete Edition)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Philosopher:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -44,6 +42,7 @@ html_template = """<!DOCTYPE html>
       --underworld-teal: #2ae6b4;
       --olympus-blue: #38bdf8;
       --crimson: #ef4444;
+      --duo-gold: #fbbf24;
       --font-title: 'Cinzel', serif;
       --font-body: 'Philosopher', sans-serif;
     }
@@ -60,7 +59,7 @@ html_template = """<!DOCTYPE html>
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #06050a;
+      background-color: #0c0914;
       font-family: var(--font-body);
       color: #f1e9da;
     }
@@ -72,7 +71,7 @@ html_template = """<!DOCTYPE html>
       display: flex;
       justify-content: center;
       align-items: center;
-      background: radial-gradient(circle at center, #181122 0%, #06050a 100%);
+      background: radial-gradient(circle at center, #1c142b 0%, #08060d 100%);
     }
 
     canvas#gameCanvas {
@@ -94,7 +93,7 @@ html_template = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 20px;
+      padding: 22px;
     }
 
     /* Top HUD */
@@ -109,13 +108,13 @@ html_template = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       gap: 10px;
-      width: 340px;
+      width: 350px;
       filter: drop-shadow(0 4px 14px rgba(0,0,0,0.9));
     }
 
     .bar-wrapper {
       position: relative;
-      height: 26px;
+      height: 28px;
       background: #110e18;
       border: 2px solid var(--gold-dark);
       border-radius: 6px;
@@ -131,12 +130,12 @@ html_template = """<!DOCTYPE html>
 
     .bar-fill.health {
       background: linear-gradient(90deg, #991b1b, #ef4444, #f87171);
-      box-shadow: 0 0 14px rgba(239, 68, 68, 0.7);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.8);
     }
 
     .bar-fill.magick {
       background: linear-gradient(90deg, #6b21a8, #a855f7, #c084fc);
-      box-shadow: 0 0 14px rgba(168, 85, 247, 0.7);
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.8);
     }
 
     .bar-text {
@@ -148,7 +147,7 @@ html_template = """<!DOCTYPE html>
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 12px;
+      padding: 0 14px;
       font-family: var(--font-title);
       font-size: 12px;
       font-weight: 700;
@@ -164,29 +163,29 @@ html_template = """<!DOCTYPE html>
 
     .chamber-title {
       font-family: var(--font-title);
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 900;
       letter-spacing: 4px;
       color: var(--gold-light);
       text-transform: uppercase;
-      text-shadow: 0 0 16px rgba(230, 180, 80, 0.8), 0 2px 8px #000;
+      text-shadow: 0 0 18px rgba(230, 180, 80, 0.9), 0 2px 8px #000;
     }
 
     .chamber-subtitle {
       font-size: 13px;
       letter-spacing: 2px;
-      color: #a79cb5;
+      color: #cbd5e1;
       text-transform: uppercase;
     }
 
     .currency-panel {
       display: flex;
-      gap: 16px;
-      background: rgba(14, 13, 19, 0.9);
+      gap: 18px;
+      background: rgba(14, 13, 19, 0.92);
       border: 1px solid var(--gold-dark);
-      padding: 8px 18px;
+      padding: 8px 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.7);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.8);
     }
 
     .currency-item {
@@ -194,43 +193,52 @@ html_template = """<!DOCTYPE html>
       align-items: center;
       gap: 6px;
       font-family: var(--font-title);
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       color: var(--gold-light);
     }
 
     .icon-obol { color: #f59e0b; filter: drop-shadow(0 0 6px #f59e0b); }
-    .icon-ash { color: #94a3b8; filter: drop-shadow(0 0 6px #cbd5e1); }
-    .icon-bones { color: #a855f7; filter: drop-shadow(0 0 6px #c084fc); }
+    .icon-ash { color: #cbd5e1; filter: drop-shadow(0 0 6px #e2e8f0); }
+    .icon-bones { color: #c084fc; filter: drop-shadow(0 0 6px #d8b4fe); }
 
     /* Left Active Boons Display */
     .active-boons-list {
       position: absolute;
-      left: 20px;
+      left: 22px;
       top: 100px;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 60vh;
+      max-height: 65vh;
+      overflow-y: auto;
       pointer-events: auto;
+      scrollbar-width: thin;
     }
 
     .boon-badge {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: rgba(14, 13, 19, 0.9);
-      border-left: 3px solid var(--gold-primary);
+      background: rgba(14, 13, 19, 0.94);
+      border-left: 4px solid var(--gold-primary);
       padding: 6px 14px;
       border-radius: 0 6px 6px 0;
-      border-top: 1px solid rgba(230, 180, 80, 0.2);
-      border-bottom: 1px solid rgba(230, 180, 80, 0.2);
-      border-right: 1px solid rgba(230, 180, 80, 0.2);
+      border-top: 1px solid rgba(230, 180, 80, 0.3);
+      border-bottom: 1px solid rgba(230, 180, 80, 0.3);
+      border-right: 1px solid rgba(230, 180, 80, 0.3);
       backdrop-filter: blur(4px);
     }
+
+    .boon-badge.duo {
+      border-left-color: #fbbf24;
+      background: linear-gradient(90deg, rgba(60, 40, 10, 0.95), rgba(20, 15, 30, 0.95));
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+    }
+
     .boon-badge-god {
       font-family: var(--font-title);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
     }
@@ -249,27 +257,27 @@ html_template = """<!DOCTYPE html>
 
     .abilities-cluster {
       display: flex;
-      gap: 12px;
+      gap: 14px;
       align-items: center;
     }
 
     .ability-slot {
-      width: 60px;
-      height: 60px;
-      background: rgba(14, 13, 19, 0.92);
+      width: 64px;
+      height: 64px;
+      background: rgba(14, 13, 19, 0.94);
       border: 2px solid var(--gold-dark);
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.85);
     }
 
     .ability-slot.active {
       border-color: var(--gold-primary);
-      box-shadow: 0 0 16px rgba(230, 180, 80, 0.6);
+      box-shadow: 0 0 18px rgba(230, 180, 80, 0.7);
     }
 
     .ability-key {
@@ -282,46 +290,46 @@ html_template = """<!DOCTYPE html>
       font-size: 10px;
       font-weight: 900;
       font-family: var(--font-title);
-      padding: 1px 5px;
+      padding: 2px 6px;
       border-radius: 4px;
     }
 
     .ability-icon {
-      font-size: 20px;
+      font-size: 22px;
     }
 
     .ability-name {
       font-size: 10px;
       font-family: var(--font-title);
-      color: #cbd5e1;
+      color: #e2e8f0;
       margin-top: 2px;
       text-transform: uppercase;
     }
 
     /* Hex Moon Circle Gauge */
     .hex-circle {
-      width: 78px;
-      height: 78px;
+      width: 82px;
+      height: 82px;
       border-radius: 50%;
-      background: radial-gradient(circle, #2d1847 0%, #0e0717 100%);
+      background: radial-gradient(circle, #3b1d5c 0%, #0e0717 100%);
       border: 3px solid #7c3aed;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
-      box-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
+      box-shadow: 0 0 22px rgba(124, 58, 237, 0.7);
     }
 
     .hex-circle.ready {
       border-color: #c084fc;
-      box-shadow: 0 0 26px rgba(192, 132, 252, 0.95);
+      box-shadow: 0 0 30px rgba(192, 132, 252, 1);
       animation: hexPulse 1.4s infinite alternate;
     }
 
     @keyframes hexPulse {
       0% { transform: scale(1); filter: brightness(1); }
-      100% { transform: scale(1.08); filter: brightness(1.3); }
+      100% { transform: scale(1.08); filter: brightness(1.35); }
     }
 
     /* Boss Health Bar */
@@ -330,31 +338,31 @@ html_template = """<!DOCTYPE html>
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      width: 600px;
+      width: 640px;
       display: none;
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.95));
     }
 
     .boss-name {
       font-family: var(--font-title);
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 900;
       letter-spacing: 4px;
       color: #fef08a;
       text-transform: uppercase;
-      text-shadow: 0 0 14px #ca8a04, 0 2px 6px #000;
+      text-shadow: 0 0 16px #ca8a04, 0 2px 6px #000;
     }
 
     .boss-bar-frame {
       position: relative;
       width: 100%;
-      height: 30px;
+      height: 32px;
       background: #110e18;
       border: 2px solid #ca8a04;
-      border-radius: 4px;
+      border-radius: 6px;
       overflow: hidden;
     }
 
@@ -362,7 +370,7 @@ html_template = """<!DOCTYPE html>
       height: 100%;
       width: 100%;
       background: linear-gradient(90deg, #b45309, #eab308, #fef08a);
-      box-shadow: 0 0 18px rgba(234, 179, 8, 0.8);
+      box-shadow: 0 0 20px rgba(234, 179, 8, 0.9);
       transition: width 0.1s linear;
     }
 
@@ -373,7 +381,7 @@ html_template = """<!DOCTYPE html>
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(4, 3, 7, 0.88);
+      background: rgba(4, 3, 7, 0.9);
       backdrop-filter: blur(8px);
       display: none;
       justify-content: center;
@@ -385,11 +393,11 @@ html_template = """<!DOCTYPE html>
     .modal-card {
       background: #0f0c18;
       border: 2px solid var(--gold-primary);
-      border-radius: 12px;
-      padding: 30px 40px;
-      box-shadow: 0 0 45px rgba(230, 180, 80, 0.35), inset 0 0 30px rgba(0,0,0,0.8);
-      max-width: 880px;
-      width: 90%;
+      border-radius: 14px;
+      padding: 32px 42px;
+      box-shadow: 0 0 50px rgba(230, 180, 80, 0.4), inset 0 0 35px rgba(0,0,0,0.85);
+      max-width: 950px;
+      width: 92%;
       text-align: center;
       position: relative;
       animation: modalFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -412,8 +420,8 @@ html_template = """<!DOCTYPE html>
 
     .modal-subtitle {
       font-size: 15px;
-      color: #a79cb5;
-      margin-bottom: 24px;
+      color: #cbd5e1;
+      margin-bottom: 22px;
       font-style: italic;
     }
 
@@ -446,6 +454,17 @@ html_template = """<!DOCTYPE html>
       box-shadow: 0 10px 24px rgba(230, 180, 80, 0.45), inset 0 0 15px rgba(230, 180, 80, 0.25);
     }
 
+    .boon-card.duo-card {
+      border-color: #fbbf24;
+      background: linear-gradient(180deg, #2e1d08 0%, #150f1f 100%);
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+    }
+
+    .boon-card.duo-card:hover {
+      border-color: #fef08a;
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.7);
+    }
+
     .boon-rarity {
       font-family: var(--font-title);
       font-size: 10px;
@@ -453,8 +472,13 @@ html_template = """<!DOCTYPE html>
       letter-spacing: 2px;
       text-transform: uppercase;
       margin-bottom: 4px;
+      color: #60a5fa;
     }
-    .rarity-rare { color: #60a5fa; }
+
+    .boon-card.duo-card .boon-rarity {
+      color: #fbbf24;
+      text-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+    }
 
     .boon-card-name {
       font-family: var(--font-title);
@@ -484,19 +508,20 @@ html_template = """<!DOCTYPE html>
     /* God Dialogue Modal */
     .dialogue-modal {
       display: flex;
-      gap: 24px;
+      gap: 26px;
       align-items: center;
       text-align: left;
+      margin-bottom: 12px;
     }
 
     .dialogue-portrait-canvas {
       width: 140px;
       height: 140px;
       border-radius: 50%;
-      border: 3px solid var(--gold-primary);
-      box-shadow: 0 0 20px rgba(230, 180, 80, 0.5);
+      border: none;
+      box-shadow: 0 0 25px rgba(230, 180, 80, 0.6);
       flex-shrink: 0;
-      background: #110e18;
+      background: transparent;
     }
 
     .dialogue-content {
@@ -583,10 +608,10 @@ html_template = """<!DOCTYPE html>
       transform: translateX(-50%);
       display: flex;
       gap: 16px;
-      background: rgba(10, 8, 16, 0.85);
+      background: rgba(10, 8, 16, 0.88);
       border: 1px solid rgba(230, 180, 80, 0.4);
       border-radius: 20px;
-      padding: 6px 18px;
+      padding: 6px 20px;
       font-size: 11px;
       font-family: var(--font-title);
       color: #cbd5e1;
@@ -638,12 +663,12 @@ html_template = """<!DOCTYPE html>
       <!-- Controls helper -->
       <div class="controls-banner">
         <span><span class="key-badge">WASD</span> Move</span>
-        <span><span class="key-badge">L-CLICK / J</span> Attack Combo</span>
-        <span><span class="key-badge">R-CLICK / K</span> Moon Sickle</span>
-        <span><span class="key-badge">Q / E</span> Cast Circle</span>
+        <span><span class="key-badge">L-CLICK / J</span> Strike</span>
+        <span><span class="key-badge">R-CLICK / K</span> Special</span>
+        <span><span class="key-badge">Q / E</span> Cast</span>
         <span><span class="key-badge">SPACE / SHIFT</span> Dash</span>
         <span><span class="key-badge">F</span> Hex</span>
-        <span><span class="key-badge">M</span> Mute OST</span>
+        <span><span class="key-badge">M</span> Mute</span>
       </div>
 
       <!-- Bottom HUD -->
@@ -682,7 +707,7 @@ html_template = """<!DOCTYPE html>
         <!-- Selene Hex Gauge -->
         <div id="hex-gauge" class="hex-circle">
           <div class="ability-key">F</div>
-          <div style="font-size: 22px;">🌕</div>
+          <div style="font-size: 24px;">🌕</div>
           <div style="font-size: 9px; font-family: var(--font-title); color: #c084fc; font-weight: 700;">HEX</div>
         </div>
       </div>
@@ -701,7 +726,7 @@ html_template = """<!DOCTYPE html>
           </div>
         </div>
         <div class="modal-title">CHOOSE A BOON</div>
-        <div class="modal-subtitle">Bestow divine power upon your blade, cast, or dash</div>
+        <div class="modal-subtitle">Bestow divine power or forge legendary Duo Boons</div>
         <div id="boon-choices-container" class="boon-cards-grid"></div>
       </div>
     </div>
@@ -733,10 +758,10 @@ html_template = """<!DOCTYPE html>
 
   <script>
     /* ==========================================================================
-       HADES 2 ENGINE: PRE-RENDERED 3D, PROCEDURAL AUDIO, PBR LIGHTING & ANIMATIONS
+       HADES 2 COMPLETE ENGINE: 30+ ENEMIES, BULLET PATTERNS, 10 GODS & DUO BOONS
        ========================================================================== */
 
-    // --- EMBEDDED PRE-RENDERED 3D ASSETS (WEBP DATA URIS) ---
+    // --- EMBEDDED PRE-RENDERED 3D ASSETS ---
     const ASSETS_DATA = %ASSETS_JSON%;
 
     const loadedImages = {};
@@ -788,18 +813,18 @@ html_template = """<!DOCTYPE html>
         noise.buffer = buffer;
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(1500, now);
-        filter.frequency.exponentialRampToValueAtTime(320, now + 0.14);
+        filter.frequency.setValueAtTime(1600, now);
+        filter.frequency.exponentialRampToValueAtTime(340, now + 0.14);
         filter.Q.value = 3.5;
 
         const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.setValueAtTime(0.45, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
 
         const osc = this.ctx.createOscillator();
         const oscGain = this.ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.setValueAtTime(270, now);
         osc.frequency.exponentialRampToValueAtTime(70, now + 0.11);
         oscGain.gain.setValueAtTime(0.35, now);
         oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
@@ -807,7 +832,6 @@ html_template = """<!DOCTYPE html>
         noise.connect(filter);
         filter.connect(gain);
         gain.connect(this.ctx.destination);
-
         osc.connect(oscGain);
         oscGain.connect(this.ctx.destination);
 
@@ -823,7 +847,7 @@ html_template = """<!DOCTYPE html>
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.setValueAtTime(540, now);
         osc.frequency.exponentialRampToValueAtTime(140, now + 0.18);
         gain.gain.setValueAtTime(0.4, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
@@ -1047,7 +1071,7 @@ html_template = """<!DOCTYPE html>
 
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // --- GOD BOONS REGISTRY ---
+    // --- 10 OLYMPIAN & CHTHONIC GODS REGISTRY & DUO BOONS ---
     const GODS = {
       zeus: {
         name: 'Zeus',
@@ -1059,9 +1083,10 @@ html_template = """<!DOCTYPE html>
           '"A storm gathers in the Underworld. Let Chronos feel the wrath of Olympus!"'
         ],
         boons: [
-          { id: 'zeus_strike', name: 'Lightning Strike', slot: 'Attack', desc: 'Attacks call down chain lightning arcing between up to 4 enemies for 40 damage.' },
-          { id: 'zeus_ring', name: 'Storm Ring', slot: 'Cast', desc: 'Your Cast circle triggers repeating lightning strikes every 0.5s.' },
-          { id: 'zeus_dash', name: 'Static Dash', slot: 'Dash', desc: 'Dashing discharges a burst of electric spark bolts.' }
+          { id: 'zeus_strike', name: 'Lightning Strike', slot: 'Attack', desc: 'Attacks call down chain lightning arcing between up to 5 enemies for 45 damage.' },
+          { id: 'zeus_ring', name: 'Storm Ring', slot: 'Cast', desc: 'Your Cast circle triggers repeating lightning strikes every 0.4s for 40 damage.' },
+          { id: 'zeus_dash', name: 'Static Dash', slot: 'Dash', desc: 'Dashing discharges a burst of 6 electric spark bolts.' },
+          { id: 'zeus_special', name: 'Thunder Special', slot: 'Special', desc: 'Special sickle calls down a thunderbolt upon every enemy struck.' }
         ]
       },
       hestia: {
@@ -1074,9 +1099,10 @@ html_template = """<!DOCTYPE html>
           '"A small ember is all it takes to consume the grandest halls of time."'
         ],
         boons: [
-          { id: 'hestia_strike', name: 'Flame Strike', slot: 'Attack', desc: 'Attacks inflict Scorch, dealing 70 damage over 3 seconds.' },
-          { id: 'hestia_ring', name: 'Smolder Ring', slot: 'Cast', desc: 'Your Cast circle ignites a continuous fire vortex that incinerates foes.' },
-          { id: 'hestia_dash', name: 'Searing Dash', slot: 'Dash', desc: 'Dash leaves a flaming path that burns enemies who step into it.' }
+          { id: 'hestia_strike', name: 'Flame Strike', slot: 'Attack', desc: 'Attacks inflict Scorch, dealing 80 burn damage over 3 seconds.' },
+          { id: 'hestia_ring', name: 'Smolder Ring', slot: 'Cast', desc: 'Your Cast circle ignites a continuous fire vortex that incinerates foes for 120 dmg.' },
+          { id: 'hestia_dash', name: 'Searing Dash', slot: 'Dash', desc: 'Dash leaves a flaming path that burns enemies who step into it.' },
+          { id: 'hestia_special', name: 'Magma Special', slot: 'Special', desc: 'Special sickle leaves a trail of burning magma on its path.' }
         ]
       },
       poseidon: {
@@ -1089,9 +1115,10 @@ html_template = """<!DOCTYPE html>
           '"Let the depths rise and crush the ancient Titan into the reef!"'
         ],
         boons: [
-          { id: 'poseidon_strike', name: 'Wave Strike', slot: 'Attack', desc: 'Attacks blast enemies backward with heavy waves. Slashing foes into walls deals 90 wall-slam bonus damage!' },
+          { id: 'poseidon_strike', name: 'Wave Strike', slot: 'Attack', desc: 'Attacks blast enemies backward with heavy waves. Slashing foes into walls deals 110 wall-slam bonus damage!' },
           { id: 'poseidon_ring', name: 'Flood Ring', slot: 'Cast', desc: 'Your Cast circle erupts into a violent geyser, knocking all snared foes outward.' },
-          { id: 'poseidon_dash', name: 'Tidal Dash', slot: 'Dash', desc: 'Dash unleashes a surging wave that propels you and slams enemies.' }
+          { id: 'poseidon_dash', name: 'Tidal Dash', slot: 'Dash', desc: 'Dash unleashes a surging wave that propels you and slams enemies.' },
+          { id: 'poseidon_special', name: 'Tsunami Special', slot: 'Special', desc: 'Special sickle creates a wide wave pushing back all enemies in front.' }
         ]
       },
       apollo: {
@@ -1104,9 +1131,10 @@ html_template = """<!DOCTYPE html>
           '"Strike with solar brilliance and dazzle all who oppose your destiny."'
         ],
         boons: [
-          { id: 'apollo_strike', name: 'Nova Strike', slot: 'Attack', desc: 'Attacks have +80% wider sweep radius and inflict Dazzle (enemies miss attacks).' },
-          { id: 'apollo_ring', name: 'Solar Ring', slot: 'Cast', desc: 'Your Cast circle expands by +100% and triggers blinding solar flares.' },
-          { id: 'apollo_special', name: 'Sunburst Special', slot: 'Special', desc: 'Special sickle creates a blinding explosion at the apex of its throw.' }
+          { id: 'apollo_strike', name: 'Nova Strike', slot: 'Attack', desc: 'Attacks have +50% wider sweep radius and inflict Dazzle (enemies miss attacks).' },
+          { id: 'apollo_ring', name: 'Solar Ring', slot: 'Cast', desc: 'Your Cast circle expands by +50% and triggers blinding solar flares.' },
+          { id: 'apollo_special', name: 'Sunburst Special', slot: 'Special', desc: 'Special sickle creates a blinding explosion at the apex of its throw.' },
+          { id: 'apollo_dash', name: 'Blinding Dash', slot: 'Dash', desc: 'Dashing blinds nearby foes for 2.5s.' }
         ]
       },
       selene: {
@@ -1119,12 +1147,148 @@ html_template = """<!DOCTYPE html>
           '"Invoke the Moon Hex, Melinoë, and pierce the shroud of Time itself."'
         ],
         boons: [
-          { id: 'selene_hex_ray', name: 'Lunar Ray', slot: 'Hex', desc: 'Fires a continuous devastating moonlight laser beam dealing 450 total damage!' },
-          { id: 'selene_hex_slow', name: 'Phase Shift', slot: 'Hex', desc: 'Slows down time for all enemies by 85% for 4 seconds.' },
-          { id: 'selene_hex_meteor', name: 'Total Eclipse', slot: 'Hex', desc: 'Calls down a colossal lunar meteor after 1s, dealing 650 area damage.' }
+          { id: 'selene_hex_ray', name: 'Lunar Ray', slot: 'Hex', desc: 'Fires a continuous devastating moonlight laser beam dealing 550 total damage!' },
+          { id: 'selene_hex_slow', name: 'Phase Shift', slot: 'Hex', desc: 'Slows down time for all enemies by 85% for 4.5 seconds.' },
+          { id: 'selene_hex_meteor', name: 'Total Eclipse', slot: 'Hex', desc: 'Calls down a colossal lunar meteor after 1s, dealing 750 area damage.' },
+          { id: 'selene_dash', name: 'Moon Cloak', slot: 'Dash', desc: 'Dashing grants invisibility and +50% critical strike chance on next hit.' }
+        ]
+      },
+      hermes: {
+        name: 'Hermes',
+        title: 'God of Swiftness',
+        portraitIndex: 5,
+        color: '#fb923c',
+        quotes: [
+          '"Quick on your feet, coz! Time waits for no one, especially not Chronos!"',
+          '"Speed is the greatest weapon against the Master of Time."'
+        ],
+        boons: [
+          { id: 'hermes_speed', name: 'Nimble Mind', slot: 'Passive', desc: 'Attack and Special speed increased by +45%.' },
+          { id: 'hermes_dash', name: 'Hyper Sprint', slot: 'Dash', desc: 'Gain +2 Dash charges and +60% movement speed for 2s after dashing.' },
+          { id: 'hermes_dodge', name: 'Greater Evasion', slot: 'Passive', desc: 'Gain a flat 30% chance to completely dodge any incoming attack.' }
+        ]
+      },
+      aphrodite: {
+        name: 'Aphrodite',
+        title: 'Goddess of Love',
+        portraitIndex: 6,
+        color: '#f43f5e',
+        quotes: [
+          '"Heartstrings weave fate, darling. Let them tremble before our beauty!"',
+          '"A broken heart hurts worse than any blade, Melinoë."'
+        ],
+        boons: [
+          { id: 'aphrodite_strike', name: 'Heartbreak Strike', slot: 'Attack', desc: 'Attacks deal +60% damage and inflict Weak, reducing enemy attack power by 35%.' },
+          { id: 'aphrodite_dash', name: 'Passion Dash', slot: 'Dash', desc: 'Dashing releases a burst of charm petals that weaken nearby foes.' },
+          { id: 'aphrodite_ring', name: 'Sweet Surrender', slot: 'Cast', desc: 'Cast circle causes snared enemies to take +50% bonus damage from all sources.' }
+        ]
+      },
+      hephaestus: {
+        name: 'Hephaestus',
+        title: 'God of the Forge',
+        portraitIndex: 7,
+        color: '#ea580c',
+        quotes: [
+          '"Good steel and heavy blows! Let us forge Chronos into scrap metal!"',
+          '"Feel the heat of the divine furnace in your strikes!"'
+        ],
+        boons: [
+          { id: 'hephaestus_strike', name: 'Volcanic Strike', slot: 'Attack', desc: 'Every 4s, your next Attack unleashes a colossal volcanic blast for 280 damage.' },
+          { id: 'hephaestus_armor', name: 'Heavy Armor', slot: 'Passive', desc: 'Gain +50 Max HP and 25% passive damage resistance.' },
+          { id: 'hephaestus_ring', name: 'Molten Ring', slot: 'Cast', desc: 'Cast circle erupts with a molten crater dealing 180 area damage.' }
+        ]
+      },
+      demeter: {
+        name: 'Demeter',
+        title: 'Goddess of Seasons',
+        portraitIndex: 8,
+        color: '#67e8f9',
+        quotes: [
+          '"Winter has arrived for the Underworld. Freeze them to brittle stone, granddaughter."',
+          '"The cold preserves nothing that stands against us."'
+        ],
+        boons: [
+          { id: 'demeter_strike', name: 'Frost Strike', slot: 'Attack', desc: 'Attacks inflict Chill, slowing enemy movement and attacks by up to 60%.' },
+          { id: 'demeter_ring', name: 'Arctic Ring', slot: 'Cast', desc: 'Cast circle summons a freezing blizzard vortex that continuously chills foes.' },
+          { id: 'demeter_dash', name: 'Glacial Dash', slot: 'Dash', desc: 'Dash leaves freezing icicles that shatter when stepped on for 80 damage.' }
+        ]
+      },
+      ares: {
+        name: 'Ares',
+        title: 'God of War',
+        portraitIndex: 9,
+        color: '#dc2626',
+        quotes: [
+          '"Carnage is the true destiny of the Underworld. Let blood flow!"',
+          '"A glorious battle awaits us, Melinoë. Slay them all."'
+        ],
+        boons: [
+          { id: 'ares_strike', name: 'Curse of Agony', slot: 'Attack', desc: 'Attacks inflict Doom, dealing 130 delayed explosive damage after 1.1 seconds.' },
+          { id: 'ares_ring', name: 'Blade Rift', slot: 'Cast', desc: 'Cast circle summons a spinning blade rift that tears through enemies for 240 dmg.' },
+          { id: 'ares_passive', name: 'Battle Rage', slot: 'Passive', desc: 'Slaying any enemy grants +50% damage boost for 5 seconds.' }
         ]
       }
     };
+
+    // --- DUO BOON SYNERGY SYSTEM ---
+    const DUO_BOONS = [
+      {
+        id: 'duo_sea_storm',
+        name: 'Sea Storm',
+        gods: ['Poseidon', 'Zeus'],
+        reqs: [['poseidon_strike', 'poseidon_dash', 'poseidon_ring'], ['zeus_strike', 'zeus_ring', 'zeus_dash']],
+        desc: 'Whenever your wave knockback effects slam enemies, instant chain lightning strikes them for 60 damage!'
+      },
+      {
+        id: 'duo_plasma',
+        name: 'Plasma Discharge',
+        gods: ['Zeus', 'Hestia'],
+        reqs: [['zeus_strike', 'zeus_ring'], ['hestia_strike', 'hestia_ring', 'hestia_dash']],
+        desc: 'Chain lightning ignites Scorch on all targets, making burn damage tick twice as fast with secondary spark bursts.'
+      },
+      {
+        id: 'duo_supernova',
+        name: 'Supernova',
+        gods: ['Apollo', 'Hestia'],
+        reqs: [['apollo_strike', 'apollo_ring'], ['hestia_strike', 'hestia_ring']],
+        desc: 'Scorched enemies detonate upon death in a massive 220px blinding solar nova dealing 180 damage.'
+      },
+      {
+        id: 'duo_blizzard',
+        name: 'Blizzard Cyclone',
+        gods: ['Poseidon', 'Demeter'],
+        reqs: [['poseidon_ring', 'poseidon_strike'], ['demeter_ring', 'demeter_strike']],
+        desc: 'Cast circle becomes a permanent freezing water cyclone that pulls in all enemies and inflicts Chill.'
+      },
+      {
+        id: 'duo_heartbreak_doom',
+        name: 'Heartbreak Doom',
+        gods: ['Aphrodite', 'Ares'],
+        reqs: [['aphrodite_strike', 'aphrodite_dash'], ['ares_strike', 'ares_ring']],
+        desc: 'Weakened foes immediately trigger continuous Doom blade rifts whenever they take attack damage.'
+      },
+      {
+        id: 'duo_freezing_inferno',
+        name: 'Freezing Inferno',
+        gods: ['Hestia', 'Demeter'],
+        reqs: [['hestia_strike', 'hestia_dash'], ['demeter_strike', 'demeter_ring']],
+        desc: 'Enemies afflicted with both Scorch and Chill suffer Steam Shock, taking +150% critical damage from all attacks.'
+      },
+      {
+        id: 'duo_volcanic_flash',
+        name: 'Volcanic Flash',
+        gods: ['Hephaestus', 'Zeus'],
+        reqs: [['hephaestus_strike', 'hephaestus_ring'], ['zeus_strike', 'zeus_ring']],
+        desc: 'Hephaestus volcanic blasts trigger chain lightning to all surrounding targets across the arena.'
+      },
+      {
+        id: 'duo_sunlit_moon',
+        name: 'Sunlit Moon',
+        gods: ['Apollo', 'Selene'],
+        reqs: [['apollo_strike', 'apollo_ring'], ['selene_hex_ray', 'selene_hex_slow', 'selene_hex_meteor']],
+        desc: 'Selene Hexes charge +100% faster and gain +100% blast radius with blinding solar brilliance.'
+      }
+    ];
 
     // --- GAME STATE ---
     const gameState = {
@@ -1132,7 +1296,7 @@ html_template = """<!DOCTYPE html>
       chamberType: 'normal',
       enemiesCleared: false,
       kills: 0,
-      gold: 50,
+      gold: 60,
       ashes: 10,
       bones: 5,
       upgrades: {
@@ -1146,22 +1310,66 @@ html_template = """<!DOCTYPE html>
       projectiles: [],
       enemies: [],
       camera: { x: 0, y: 0 },
-      isPaused: false
+      isPaused: false,
+      battleRageTimer: 0
     };
 
-    // --- PLAYER CLASS (Melinoë) ---
+    // --- 30+ ENEMY DEFINITIONS & SPRITE SHEETS MAPPING ---
+    const ENEMY_TYPES = {
+      // 1. Monsters & Beasts (Mapped to monsters_beasts.webp: 3x2 grid)
+      minotaur_brute: { name: 'Minotaur Brute', maxHp: 420, speed: 90, radius: 40, color: '#b91c1c', sheet: 'monsters_beasts', cellX: 0, cellY: 0, cols: 3, rows: 2, behavior: 'bull_rush' },
+      cerberus_hound: { name: 'Cerberus Houndling', maxHp: 290, speed: 190, radius: 32, color: '#b45309', sheet: 'monsters_beasts', cellX: 1, cellY: 0, cols: 3, rows: 2, behavior: 'triple_fireball' },
+      tartarus_behemoth: { name: 'Tartarus Behemoth', maxHp: 600, speed: 60, radius: 48, color: '#78716c', sheet: 'monsters_beasts', cellX: 2, cellY: 0, cols: 3, rows: 2, behavior: 'earthquake' },
+      cyclops_smasher: { name: 'Cyclops Smasher', maxHp: 440, speed: 75, radius: 42, color: '#71717a', sheet: 'monsters_beasts', cellX: 0, cellY: 1, cols: 3, rows: 2, behavior: 'quad_boulder_slam' },
+      gorgon_viper: { name: 'Gorgon Viper', maxHp: 145, speed: 180, radius: 25, color: '#15803d', sheet: 'monsters_beasts', cellX: 1, cellY: 1, cols: 3, rows: 2, behavior: 'poison_fan' },
+      lava_crag_crab: { name: 'Lava Crag Crab', maxHp: 340, speed: 110, radius: 35, color: '#c2410c', sheet: 'monsters_beasts', cellX: 2, cellY: 1, cols: 3, rows: 2, behavior: 'magma_dropper' },
+
+      // 2. Undead & Cultists (Mapped to undead_cultists.webp: 3x2 grid)
+      bloodless_screamer: { name: 'Bloodless Screamer', maxHp: 100, speed: 230, radius: 22, color: '#f43f5e', sheet: 'undead_cultists', cellX: 0, cellY: 0, cols: 3, rows: 2, behavior: 'screamer' },
+      satyr_cultist: { name: 'Satyr Cultist', maxHp: 130, speed: 175, radius: 25, color: '#84cc16', sheet: 'undead_cultists', cellX: 1, cellY: 0, cols: 3, rows: 2, behavior: 'poison_darts' },
+      phantasm_cloaker: { name: 'Phantasm Cloaker', maxHp: 120, speed: 160, radius: 24, color: '#9333ea', sheet: 'undead_cultists', cellX: 2, cellY: 0, cols: 3, rows: 2, behavior: 'stealth_backstab' },
+      doom_herald: { name: 'Doom Herald', maxHp: 260, speed: 110, radius: 32, color: '#ef4444', sheet: 'undead_cultists', cellX: 0, cellY: 1, cols: 3, rows: 2, behavior: 'doom_runes' },
+      bone_chariot: { name: 'Bone Chariot', maxHp: 250, speed: 310, radius: 32, color: '#d97706', sheet: 'undead_cultists', cellX: 1, cellY: 1, cols: 3, rows: 2, behavior: 'wall_bounce_charger' },
+      automaton_sentry: { name: 'Automaton Sentry', maxHp: 320, speed: 0, radius: 34, color: '#ca8a04', sheet: 'undead_cultists', cellX: 2, cellY: 1, cols: 3, rows: 2, behavior: 'dual_laser_turret' },
+
+      // 3. Shades & Swarmers (Mapped to shade.webp)
+      shade_wretch: { name: 'Shade Wretch', maxHp: 85, speed: 200, radius: 24, color: '#2ae6b4', sheet: 'shade', behavior: 'swarmer' },
+      shade_bruiser: { name: 'Shade Bruiser', maxHp: 280, speed: 85, radius: 36, color: '#0891b2', sheet: 'shade', behavior: 'slammer' },
+      blast_beetle: { name: 'Blast Beetle', maxHp: 75, speed: 260, radius: 20, color: '#dc2626', sheet: 'shade', behavior: 'kamikaze_bomber' },
+      clockwork_saw: { name: 'Clockwork Saw', maxHp: 180, speed: 270, radius: 24, color: '#eab308', sheet: 'shade', behavior: 'blade_bouncer' },
+      stygian_jellyfish: { name: 'Stygian Jellyfish', maxHp: 175, speed: 70, radius: 30, color: '#06b6d4', sheet: 'shade', behavior: 'electric_pulse_ring' },
+      hydra_spawn: { name: 'Hydra Spawn', maxHp: 290, speed: 85, radius: 33, color: '#16a34a', sheet: 'shade', behavior: 'bouncing_acid_triad' },
+      shadow_reaper: { name: 'Shadow Reaper', maxHp: 170, speed: 140, radius: 28, color: '#6366f1', sheet: 'shade', behavior: 'teleport_scythe' },
+      void_lurker: { name: 'Void Lurker', maxHp: 155, speed: 165, radius: 26, color: '#4c1d95', sheet: 'shade', behavior: 'burrow_eruption' },
+
+      // 4. Casters (Mapped to witch.webp)
+      witch_siren: { name: 'Witch Siren', maxHp: 140, speed: 120, radius: 28, color: '#a855f7', sheet: 'witch', behavior: 'triple_orb' },
+      witch_archmage: { name: 'Witch Archmage', maxHp: 210, speed: 95, radius: 30, color: '#c084fc', sheet: 'witch', behavior: 'pentagram_mortar' },
+      flame_cultist: { name: 'Flame Cultist', maxHp: 160, speed: 115, radius: 26, color: '#ea580c', sheet: 'witch', behavior: 'flamethrower' },
+      frost_banshee: { name: 'Frost Banshee', maxHp: 175, speed: 130, radius: 27, color: '#38bdf8', sheet: 'witch', behavior: 'frost_spiral' },
+      chrono_mage: { name: 'Chrono-Mage', maxHp: 240, speed: 105, radius: 30, color: '#fbbf24', sheet: 'witch', behavior: 'time_rift' },
+      time_weever: { name: 'Time Weever', maxHp: 190, speed: 125, radius: 27, color: '#eab308', sheet: 'witch', behavior: 'time_tether_bombs' },
+      sirens_choir: { name: 'Sirens Choir', maxHp: 200, speed: 110, radius: 28, color: '#ec4899', sheet: 'witch', behavior: 'charm_pulse' },
+      soul_necromancer: { name: 'Soul Necromancer', maxHp: 230, speed: 100, radius: 29, color: '#8b5cf6', sheet: 'witch', behavior: 'summon_skeleton_shades' },
+
+      // 5. Elite & Boss (Mapped to chronos.webp)
+      chronos_vanguard: { name: 'Chronos Vanguard', maxHp: 360, speed: 110, radius: 36, color: '#d97706', sheet: 'chronos', behavior: 'shield_spearman' },
+      chronos: { name: 'Chronos — Titan of Time', maxHp: 3400, speed: 100, radius: 58, color: '#eab308', sheet: 'chronos', behavior: 'titan_boss' }
+    };
+
+    // --- PLAYER CLASS ---
     class Player {
       constructor() {
         this.x = 0;
-        this.y = 0;
-        this.radius = 22;
+        this.y = 200;
+        this.radius = 24;
         this.baseMaxHp = 100;
         this.maxHp = 100;
         this.hp = 100;
         this.baseMagick = 50;
         this.maxMagick = 50;
         this.magick = 50;
-        this.speed = 320;
+        this.speed = 330;
         this.angle = 0;
 
         this.attackCombo = 0;
@@ -1176,6 +1384,8 @@ html_template = """<!DOCTYPE html>
         this.castActive = null;
         this.hexCharge = 0;
         this.hexMax = 100;
+        this.volcanicReady = true;
+        this.volcanicTimer = 0;
 
         this.animRow = 0;
         this.animFrame = 0;
@@ -1184,11 +1394,12 @@ html_template = """<!DOCTYPE html>
 
       resetForRun() {
         this.maxHp = this.baseMaxHp + gameState.upgrades.maxHp * 20;
+        if (hasBoon('hephaestus_armor')) this.maxHp += 50;
         this.hp = this.maxHp;
         this.maxMagick = this.baseMagick + gameState.upgrades.magick * 15;
         this.magick = this.maxMagick;
         this.x = 0;
-        this.y = 260;
+        this.y = 220;
         this.hexCharge = 0;
         this.castActive = null;
         this.isDashing = false;
@@ -1198,13 +1409,22 @@ html_template = """<!DOCTYPE html>
 
       update(dt) {
         if (this.magick < this.maxMagick) {
-          this.magick = Math.min(this.maxMagick, this.magick + dt * 6);
+          this.magick = Math.min(this.maxMagick, this.magick + dt * 7);
         }
 
         if (this.iFrames > 0) this.iFrames -= dt;
         if (this.attackTimer > 0) this.attackTimer -= dt;
         if (this.specialCooldown > 0) this.specialCooldown -= dt;
         if (this.dashCooldown > 0) this.dashCooldown -= dt;
+        if (gameState.battleRageTimer > 0) gameState.battleRageTimer -= dt;
+
+        if (!this.volcanicReady) {
+          this.volcanicTimer += dt;
+          if (this.volcanicTimer >= 4.0) {
+            this.volcanicReady = true;
+            this.volcanicTimer = 0;
+          }
+        }
 
         const worldMouseX = mouse.x + gameState.camera.x - canvas.width / 2;
         const worldMouseY = mouse.y + gameState.camera.y - canvas.height / 2;
@@ -1213,7 +1433,7 @@ html_template = """<!DOCTYPE html>
         if (this.isDashing) {
           this.dashTimer -= dt;
           this.moveWithCollision(this.dashVx * dt, this.dashVy * dt);
-          if (Math.random() < 0.7) {
+          if (Math.random() < 0.8) {
             gameState.particles.push(new Particle(this.x + (Math.random()-0.5)*20, this.y + (Math.random()-0.5)*20, 0, 0, '#2ae6b4', 18, 0.3, 'ghost'));
           }
           if (this.dashTimer <= 0) {
@@ -1231,7 +1451,8 @@ html_template = """<!DOCTYPE html>
           if (len > 0) {
             moveX /= len;
             moveY /= len;
-            this.moveWithCollision(moveX * this.speed * dt, moveY * this.speed * dt);
+            const spd = this.speed * (hasBoon('hermes_dash') ? 1.25 : 1.0);
+            this.moveWithCollision(moveX * spd * dt, moveY * spd * dt);
             this.animRow = 1;
           } else {
             this.animRow = 0;
@@ -1250,6 +1471,19 @@ html_template = """<!DOCTYPE html>
 
         if (this.castActive) {
           this.castActive.timer -= dt;
+
+          if (hasBoon('duo_blizzard')) {
+            gameState.enemies.forEach(e => {
+              const d = Math.hypot(e.x - this.castActive.x, e.y - this.castActive.y);
+              if (d < 300) {
+                const ang = Math.atan2(this.castActive.y - e.y, this.castActive.x - e.x);
+                e.x += Math.cos(ang) * 90 * dt;
+                e.y += Math.sin(ang) * 90 * dt;
+                e.applyChill(0.5);
+              }
+            });
+          }
+
           if (this.castActive.timer <= 0) {
             this.detonateCast();
           }
@@ -1264,50 +1498,84 @@ html_template = """<!DOCTYPE html>
       }
 
       triggerAttack() {
+        const atkSpdMod = hasBoon('hermes_speed') ? 0.6 : 1.0;
         if (this.attackTimer > 0 || this.isDashing || gameState.isPaused) return;
-        this.attackTimer = 0.22;
+        this.attackTimer = 0.22 * atkSpdMod;
         this.attackCombo = (this.attackCombo + 1) % 3;
         sound.playSlash();
 
-        let baseDmg = 38 + (this.attackCombo === 2 ? 30 : 0);
+        let baseDmg = 38 + (this.attackCombo === 2 ? 32 : 0);
         baseDmg *= (1 + gameState.upgrades.damage * 0.1);
+        if (gameState.battleRageTimer > 0) baseDmg *= 1.5;
+        if (hasBoon('aphrodite_strike')) baseDmg *= 1.6;
 
-        const attackRange = hasBoon('apollo_strike') ? 120 : 85;
-        const attackArc = hasBoon('apollo_strike') ? Math.PI * 0.85 : Math.PI * 0.6;
+        const attackRange = hasBoon('apollo_strike') ? 150 : 105;
+        const attackArc = Math.PI * 0.7;
 
-        // Spawn animated attack sweep sprite
         gameState.particles.push(new AnimatedAttackSweep(this.x, this.y, this.angle, attackRange, this.attackCombo));
 
         gameState.enemies.forEach(enemy => {
           const dx = enemy.x - this.x;
           const dy = enemy.y - this.y;
           const dist = Math.hypot(dx, dy);
+
           if (dist <= attackRange + enemy.radius) {
             const angleToEnemy = Math.atan2(dy, dx);
             let angleDiff = Math.abs(angleToEnemy - this.angle);
             if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
 
             if (angleDiff <= attackArc / 2) {
-              enemy.takeDamage(baseDmg, 'player');
+              let finalDmg = baseDmg;
+              if (enemy.isWeak && hasBoon('aphrodite_ring')) finalDmg *= 1.5;
+              if (enemy.scorchStacks > 0 && enemy.chillStacks > 0 && hasBoon('duo_freezing_inferno')) finalDmg *= 2.5;
+
+              enemy.takeDamage(finalDmg, 'player');
               sound.playHit();
               this.hexCharge = Math.min(this.hexMax, this.hexCharge + 12);
               updateHUD();
 
+              gameState.particles.push(new HitSpark(enemy.x, enemy.y, '#2ae6b4'));
+
+              if (hasBoon('hephaestus_strike') && this.volcanicReady) {
+                this.volcanicReady = false;
+                enemy.takeDamage(280, 'volcanic');
+                sound.playExplosion();
+                createScreenShake(14);
+                gameState.particles.push(new AnimatedFireExplosion(enemy.x, enemy.y, 160));
+                if (hasBoon('duo_volcanic_flash')) {
+                  procChainLightning(enemy, 65);
+                }
+              }
+
+              if (hasBoon('ares_strike')) {
+                enemy.applyDoom(130);
+              }
+
+              if (hasBoon('demeter_strike')) {
+                enemy.applyChill(3.5);
+              }
+
               if (hasBoon('zeus_strike')) {
-                procChainLightning(enemy, 40);
+                procChainLightning(enemy, 45);
               }
+
               if (hasBoon('hestia_strike')) {
-                enemy.applyScorch(70);
-                gameState.particles.push(new AnimatedFireExplosion(enemy.x, enemy.y, 60));
+                enemy.applyScorch(80);
+                gameState.particles.push(new AnimatedFireExplosion(enemy.x, enemy.y, 70));
               }
+
               if (hasBoon('poseidon_strike')) {
-                const knockDist = 95;
+                const knockDist = 110;
                 const targetX = enemy.x + Math.cos(this.angle) * knockDist;
                 const targetY = enemy.y + Math.sin(this.angle) * knockDist;
-                gameState.particles.push(new AnimatedWaterWave(enemy.x, enemy.y, this.angle, 70));
+                gameState.particles.push(new AnimatedWaterWave(enemy.x, enemy.y, this.angle, 90));
+
+                if (hasBoon('duo_sea_storm')) {
+                  procChainLightning(enemy, 60);
+                }
 
                 if (checkWallCollision(targetX, targetY, enemy.radius)) {
-                  enemy.takeDamage(90, 'slam');
+                  enemy.takeDamage(110, 'slam');
                   sound.playExplosion();
                   createScreenShake(8);
                 } else {
@@ -1321,16 +1589,20 @@ html_template = """<!DOCTYPE html>
       }
 
       triggerSpecial() {
+        const atkSpdMod = hasBoon('hermes_speed') ? 0.6 : 1.0;
         if (this.specialCooldown > 0 || gameState.isPaused) return;
-        this.specialCooldown = 0.5;
+        this.specialCooldown = 0.48 * atkSpdMod;
         sound.playSlash();
 
-        const spd = 550;
+        const spd = 580;
+        let specDmg = 52 * (1 + gameState.upgrades.damage * 0.1);
+        if (gameState.battleRageTimer > 0) specDmg *= 1.5;
+
         gameState.projectiles.push(new Projectile(
           this.x, this.y,
           Math.cos(this.angle) * spd,
           Math.sin(this.angle) * spd,
-          48 * (1 + gameState.upgrades.damage * 0.1),
+          specDmg,
           'moon_sickle',
           this
         ));
@@ -1346,7 +1618,7 @@ html_template = """<!DOCTYPE html>
           sound.playCast();
           const targetX = mouse.x + gameState.camera.x - canvas.width / 2;
           const targetY = mouse.y + gameState.camera.y - canvas.height / 2;
-          const radius = hasBoon('apollo_ring') ? 170 : 120;
+          const radius = hasBoon('apollo_ring') ? 180 : 120;
           this.castActive = {
             x: targetX,
             y: targetY,
@@ -1364,35 +1636,43 @@ html_template = """<!DOCTYPE html>
         sound.playExplosion();
         createScreenShake(10);
         const radius = this.castActive.radius;
-        const dmg = 95 * (1 + gameState.upgrades.damage * 0.1);
+        let dmg = 105 * (1 + gameState.upgrades.damage * 0.1);
 
         gameState.enemies.forEach(enemy => {
           const dist = Math.hypot(enemy.x - this.castActive.x, enemy.y - this.castActive.y);
           if (dist <= radius + enemy.radius) {
             enemy.takeDamage(dmg, 'cast');
             if (hasBoon('hestia_ring')) {
-              enemy.applyScorch(95);
+              enemy.applyScorch(120);
               gameState.particles.push(new AnimatedFireExplosion(enemy.x, enemy.y, 80));
             }
             if (hasBoon('zeus_ring')) {
               procChainLightning(enemy, 55);
             }
+            if (hasBoon('hephaestus_ring')) {
+              enemy.takeDamage(180, 'volcanic');
+              gameState.particles.push(new AnimatedFireExplosion(enemy.x, enemy.y, 140));
+            }
+            if (hasBoon('ares_ring')) {
+              enemy.takeDamage(240, 'doom');
+              gameState.particles.push(new Shockwave(enemy.x, enemy.y, 120, '#dc2626'));
+            }
             if (hasBoon('poseidon_ring')) {
               const ang = Math.atan2(enemy.y - this.castActive.y, enemy.x - this.castActive.x);
-              enemy.x += Math.cos(ang) * 95;
-              enemy.y += Math.sin(ang) * 95;
+              enemy.x += Math.cos(ang) * 110;
+              enemy.y += Math.sin(ang) * 110;
               gameState.particles.push(new AnimatedWaterWave(enemy.x, enemy.y, ang, 90));
             }
           }
         });
 
-        gameState.particles.push(new AnimatedFireExplosion(this.castActive.x, this.castActive.y, radius * 1.2));
+        gameState.particles.push(new AnimatedFireExplosion(this.castActive.x, this.castActive.y, radius * 1.3));
         this.castActive = null;
       }
 
       triggerDash() {
         if (this.dashCooldown > 0 || this.isDashing || gameState.isPaused) return;
-        this.dashCooldown = 0.42;
+        this.dashCooldown = 0.4;
         this.dashTimer = 0.18;
         this.isDashing = true;
         this.iFrames = 0.25;
@@ -1414,7 +1694,7 @@ html_template = """<!DOCTYPE html>
           moveY /= len;
         }
 
-        const dashSpeed = 780;
+        const dashSpeed = 820;
         this.dashVx = moveX * dashSpeed;
         this.dashVy = moveY * dashSpeed;
 
@@ -1422,14 +1702,20 @@ html_template = """<!DOCTYPE html>
           sound.playLightning();
           for (let i = 0; i < 6; i++) {
             const a = (i / 6) * Math.PI * 2;
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*320, Math.sin(a)*320, 28, 'spark', this));
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*340, Math.sin(a)*340, 32, 'spark', this));
           }
         }
         if (hasBoon('hestia_dash')) {
           gameState.particles.push(new FireTrail(this.x, this.y));
         }
+        if (hasBoon('demeter_dash')) {
+          gameState.particles.push(new IceShardTrap(this.x, this.y));
+        }
         if (hasBoon('poseidon_dash')) {
-          gameState.particles.push(new AnimatedWaterWave(this.x, this.y, Math.atan2(moveY, moveX), 80));
+          gameState.particles.push(new AnimatedWaterWave(this.x, this.y, Math.atan2(moveY, moveX), 90));
+        }
+        if (hasBoon('aphrodite_dash')) {
+          gameState.particles.push(new CharmBurst(this.x, this.y));
         }
       }
 
@@ -1440,16 +1726,18 @@ html_template = """<!DOCTYPE html>
         sound.playExplosion();
         createScreenShake(15);
 
+        const radiusBoost = hasBoon('duo_sunlit_moon') ? 2.0 : 1.0;
+
         if (hasBoon('selene_hex_ray')) {
-          const rayLength = 700;
-          for (let i = 0; i < 16; i++) {
+          const rayLength = 750 * radiusBoost;
+          for (let i = 0; i < 18; i++) {
             setTimeout(() => {
               gameState.enemies.forEach(e => {
                 const dist = Math.hypot(e.x - this.x, e.y - this.y);
                 if (dist < rayLength) {
                   const ang = Math.atan2(e.y - this.y, e.x - this.x);
-                  if (Math.abs(ang - this.angle) < 0.35) {
-                    e.takeDamage(40, 'hex');
+                  if (Math.abs(ang - this.angle) < 0.38) {
+                    e.takeDamage(48, 'hex');
                   }
                 }
               });
@@ -1457,33 +1745,44 @@ html_template = """<!DOCTYPE html>
           }
           gameState.particles.push(new LunarRayEffect(this.x, this.y, this.angle, rayLength));
         } else if (hasBoon('selene_hex_slow')) {
-          gameState.enemies.forEach(e => e.timeSlowTimer = 4.0);
-          gameState.particles.push(new Shockwave(this.x, this.y, 550, '#c084fc'));
+          gameState.enemies.forEach(e => e.timeSlowTimer = 4.5);
+          gameState.particles.push(new Shockwave(this.x, this.y, 600 * radiusBoost, '#c084fc'));
         } else {
           const targetX = mouse.x + gameState.camera.x - canvas.width / 2;
           const targetY = mouse.y + gameState.camera.y - canvas.height / 2;
           setTimeout(() => {
             sound.playExplosion();
-            createScreenShake(18);
+            createScreenShake(20);
             gameState.enemies.forEach(e => {
-              if (Math.hypot(e.x - targetX, e.y - targetY) < 200) {
-                e.takeDamage(450, 'hex');
+              if (Math.hypot(e.x - targetX, e.y - targetY) < 220 * radiusBoost) {
+                e.takeDamage(750, 'hex');
               }
             });
-            gameState.particles.push(new AnimatedFireExplosion(targetX, targetY, 200));
+            gameState.particles.push(new AnimatedFireExplosion(targetX, targetY, 220 * radiusBoost));
           }, 550);
         }
       }
 
       takeDamage(amount) {
         if (this.iFrames > 0 || gameState.isPaused) return;
-        this.hp -= amount;
+
+        if (hasBoon('hermes_dodge') && Math.random() < 0.3) {
+          gameState.particles.push(new FloatingText(this.x, this.y - 28, 'DODGED!', '#fb923c'));
+          sound.playDash();
+          return;
+        }
+
+        let finalDmg = amount;
+        if (hasBoon('hephaestus_armor')) finalDmg *= 0.75;
+        finalDmg = Math.round(finalDmg);
+
+        this.hp -= finalDmg;
         this.iFrames = 0.6;
         sound.playHit();
         createScreenShake(8);
         updateHUD();
 
-        gameState.particles.push(new FloatingText(this.x, this.y - 20, `-${amount}`, '#ef4444'));
+        gameState.particles.push(new FloatingText(this.x, this.y - 24, `-${finalDmg}`, '#ef4444'));
 
         if (this.hp <= 0) {
           if (gameState.upgrades.defiance > 0) {
@@ -1507,17 +1806,16 @@ html_template = """<!DOCTYPE html>
         // Cast Circle Draw
         if (this.castActive) {
           ctx.save();
-          const castImg = loadedImages['fx'];
-          if (castImg && castImg.complete) {
+          const cleanFx = loadedImages['clean_fx'];
+          if (cleanFx && cleanFx.complete) {
             ctx.save();
             ctx.translate(this.castActive.x - this.x, this.castActive.y - this.y);
             this.castActive.angle += 0.02;
             ctx.rotate(this.castActive.angle);
-            // fx.webp cell (1, 0) is purple binding circle
-            const cw = castImg.width / 3;
-            const ch = castImg.height / 3;
+            const sw = cleanFx.width / 2;
+            const sh = cleanFx.height;
             const rad = this.castActive.radius;
-            ctx.drawImage(castImg, 0, ch, cw, ch, -rad, -rad, rad * 2, rad * 2);
+            ctx.drawImage(cleanFx, 0, 0, sw, sh, -rad, -rad, rad * 2, rad * 2);
             ctx.restore();
           } else {
             ctx.beginPath();
@@ -1529,10 +1827,16 @@ html_template = """<!DOCTYPE html>
           ctx.restore();
         }
 
+        // Character glowing aura
+        ctx.beginPath();
+        ctx.arc(0, 0, 32, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(42, 230, 180, 0.25)';
+        ctx.fill();
+
         // Shadow
         ctx.beginPath();
-        ctx.ellipse(0, 18, 22, 11, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.ellipse(0, 22, 24, 12, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
         ctx.fill();
 
         // Sprite
@@ -1546,7 +1850,7 @@ html_template = """<!DOCTYPE html>
           const facingLeft = Math.cos(this.angle) < 0;
           if (facingLeft) ctx.scale(-1, 1);
 
-          ctx.drawImage(heroImg, sx, sy, cellW, cellH, -46, -58, 92, 92);
+          ctx.drawImage(heroImg, sx, sy, cellW, cellH, -52, -66, 105, 105);
         }
 
         ctx.restore();
@@ -1555,40 +1859,93 @@ html_template = """<!DOCTYPE html>
 
     const player = new Player();
 
-    // --- ENEMY CLASSES ---
+    // --- ENEMY CLASS (Renders from monsters_beasts, undead_cultists, shade, witch, chronos) ---
     class Enemy {
-      constructor(x, y, type) {
+      constructor(x, y, typeKey) {
         this.x = x;
         this.y = y;
-        this.type = type;
-        this.radius = type === 'chronos' ? 56 : (type === 'witch' ? 26 : 24);
-        this.maxHp = type === 'chronos' ? 2600 : (type === 'witch' ? 150 : 95);
+        this.typeKey = typeKey;
+        const conf = ENEMY_TYPES[typeKey] || ENEMY_TYPES['shade_wretch'];
+        this.name = conf.name;
+        this.maxHp = conf.maxHp;
         this.hp = this.maxHp;
-        this.speed = type === 'chronos' ? 100 : (type === 'witch' ? 125 : 175);
-        this.attackCooldown = 0;
+        this.speed = conf.speed;
+        this.baseSpeed = conf.speed;
+        this.radius = conf.radius;
+        this.color = conf.color;
+        this.sheet = conf.sheet;
+        this.cellX = conf.cellX !== undefined ? conf.cellX : 0;
+        this.cellY = conf.cellY !== undefined ? conf.cellY : 0;
+        this.cols = conf.cols || 3;
+        this.rows = conf.rows || 3;
+        this.behavior = conf.behavior;
+
+        this.attackCooldown = 1.0 + Math.random() * 1.5;
+        this.telegraphTimer = 0;
+        this.isTelegraphing = false;
+        this.telegraphType = 'circle';
+        this.telegraphAngle = 0;
+        this.telegraphTarget = { x: 0, y: 0 };
+
         this.scorchStacks = 0;
         this.scorchTimer = 0;
+        this.chillStacks = 0;
+        this.chillTimer = 0;
+        this.doomDamage = 0;
+        this.doomTimer = 0;
         this.timeSlowTimer = 0;
+        this.isWeak = false;
+        this.weakTimer = 0;
+        this.isBurrowed = false;
+
         this.animFrame = 0;
         this.animRow = 0;
         this.animTimer = 0;
         this.angle = 0;
+
+        this.vx = (Math.random() - 0.5) * this.speed * 1.4;
+        this.vy = (Math.random() - 0.5) * this.speed * 1.4;
       }
 
       update(dt) {
-        const effectiveDt = this.timeSlowTimer > 0 ? dt * 0.15 : dt;
-        if (this.timeSlowTimer > 0) this.timeSlowTimer -= dt;
+        let speedMult = 1.0;
+        if (this.timeSlowTimer > 0) {
+          this.timeSlowTimer -= dt;
+          speedMult *= 0.15;
+        }
+        if (this.chillTimer > 0) {
+          this.chillTimer -= dt;
+          speedMult *= 0.5;
+        }
+
+        const effectiveDt = dt * speedMult;
 
         if (this.scorchTimer > 0) {
           this.scorchTimer -= dt;
-          this.takeDamage(this.scorchStacks * dt, 'scorch', true);
+          const tickRate = hasBoon('duo_plasma') ? 2.0 : 1.0;
+          this.takeDamage(this.scorchStacks * dt * tickRate, 'scorch', true);
         }
 
-        let moveSpeed = this.speed;
+        if (this.doomTimer > 0) {
+          this.doomTimer -= dt;
+          if (this.doomTimer <= 0) {
+            this.takeDamage(this.doomDamage, 'doom');
+            sound.playExplosion();
+            gameState.particles.push(new Shockwave(this.x, this.y, 90, '#dc2626'));
+            this.doomDamage = 0;
+          }
+        }
+
+        if (this.weakTimer > 0) {
+          this.weakTimer -= dt;
+          if (this.weakTimer <= 0) this.isWeak = false;
+        }
+
+        let moveSpeed = this.speed * speedMult;
         if (player.castActive) {
           const dToCast = Math.hypot(this.x - player.castActive.x, this.y - player.castActive.y);
           if (dToCast <= player.castActive.radius) {
-            moveSpeed *= 0.35;
+            moveSpeed *= 0.3;
           }
         }
 
@@ -1597,68 +1954,218 @@ html_template = """<!DOCTYPE html>
         const dist = Math.hypot(dx, dy);
         this.angle = Math.atan2(dy, dx);
 
+        if (this.isTelegraphing) {
+          this.telegraphTimer -= effectiveDt;
+          if (this.telegraphTimer <= 0) {
+            this.isTelegraphing = false;
+            this.executeAttack();
+          }
+          return;
+        }
+
         if (this.attackCooldown > 0) this.attackCooldown -= effectiveDt;
 
-        if (this.type === 'shade') {
-          if (dist > 50) {
-            const vx = (dx / dist) * moveSpeed;
-            const vy = (dy / dist) * moveSpeed;
-            this.moveWithCollision(vx * effectiveDt, vy * effectiveDt);
-            this.animRow = 1;
-          } else {
-            this.animRow = 0;
-            if (this.attackCooldown <= 0) {
-              this.attackCooldown = 1.3;
-              this.animRow = 2;
-              setTimeout(() => {
-                if (Math.hypot(player.x - this.x, player.y - this.y) < 70) {
-                  player.takeDamage(18);
-                }
-              }, 300);
-            }
-          }
-        } else if (this.type === 'witch') {
-          if (dist < 190) {
-            this.moveWithCollision(-(dx / dist) * moveSpeed * effectiveDt, -(dy / dist) * moveSpeed * effectiveDt);
-          } else if (dist > 330) {
-            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-          }
-          this.animRow = 1;
-
-          if (this.attackCooldown <= 0 && dist < 460) {
-            this.attackCooldown = 2.4;
-            this.animRow = 2;
-            sound.playCast();
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle)*230, Math.sin(this.angle)*230, 24, 'witch_orb', this));
-          }
-        } else if (this.type === 'chronos') {
-          updateBossHUD(this);
-          if (dist > 95) {
+        if (this.behavior === 'swarmer') {
+          if (dist > 45) {
             this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
             this.animRow = 1;
+          } else if (this.attackCooldown <= 0) {
+            this.startTelegraph('circle', 0.45, 60);
           }
-
+        } else if (this.behavior === 'slammer') {
+          if (dist > 75) {
+            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+            this.animRow = 1;
+          } else if (this.attackCooldown <= 0) {
+            this.startTelegraph('circle', 0.7, 130);
+          }
+        } else if (this.behavior === 'triple_orb') {
+          if (dist < 200) this.moveWithCollision(-(dx / dist) * moveSpeed * effectiveDt, -(dy / dist) * moveSpeed * effectiveDt);
+          else if (dist > 360) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0 && dist < 500) {
+            this.startTelegraph('line', 0.6, 400);
+          }
+        } else if (this.behavior === 'pentagram_mortar') {
+          if (dist < 260) this.moveWithCollision(-(dx / dist) * moveSpeed * effectiveDt, -(dy / dist) * moveSpeed * effectiveDt);
           if (this.attackCooldown <= 0) {
-            this.attackCooldown = 2.8;
-            this.animRow = 2;
-            sound.playSlash();
-            createScreenShake(12);
-            setTimeout(() => {
-              if (Math.hypot(player.x - this.x, player.y - this.y) < 150) {
-                player.takeDamage(38);
-              }
-              for (let i = 0; i < 8; i++) {
-                const a = (i / 8) * Math.PI * 2;
-                gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*270, Math.sin(a)*270, 26, 'time_shard', this));
-              }
-            }, 500);
+            this.startTelegraph('mortar', 0.8, 140);
           }
+        } else if (this.behavior === 'poison_fan' || this.behavior === 'poison_darts') {
+          if (dist > 180) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0) {
+            this.startTelegraph('fan', 0.5, 300);
+          }
+        } else if (this.behavior === 'screamer') {
+          this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0 && dist < 120) {
+            this.startTelegraph('ring', 0.4, 150);
+          }
+        } else if (this.behavior === 'bull_rush') {
+          if (this.attackCooldown <= 0 && dist < 420) {
+            this.startTelegraph('rush', 0.75, 450);
+          } else {
+            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          }
+        } else if (this.behavior === 'dual_laser_turret') {
+          this.angle += effectiveDt * 1.2;
+          if (this.attackCooldown <= 0) {
+            this.attackCooldown = 0.15;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle)*360, Math.sin(this.angle)*360, 14, 'laser_shard', this));
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle+Math.PI)*360, Math.sin(this.angle+Math.PI)*360, 14, 'laser_shard', this));
+          }
+        } else if (this.behavior === 'magma_dropper') {
+          this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (Math.random() < 0.05) gameState.particles.push(new FireTrail(this.x, this.y));
+          if (this.attackCooldown <= 0) this.startTelegraph('fan', 0.6, 280);
+        } else if (this.behavior === 'teleport_scythe' || this.behavior === 'stealth_backstab') {
+          if (this.attackCooldown <= 0) {
+            this.x = player.x - Math.cos(player.angle) * 70;
+            this.y = player.y - Math.sin(player.angle) * 70;
+            this.startTelegraph('circle', 0.5, 120);
+          }
+        } else if (this.behavior === 'earthquake' || this.behavior === 'quad_boulder_slam') {
+          if (dist > 90) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0) this.startTelegraph('earthquake', 0.9, 200);
+        } else if (this.behavior === 'wall_bounce_charger' || this.behavior === 'blade_bouncer') {
+          this.x += this.vx * effectiveDt;
+          this.y += this.vy * effectiveDt;
+          if (checkWallCollision(this.x, this.y, this.radius)) {
+            this.vx = -this.vx;
+            this.vy = -this.vy;
+          }
+          if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) {
+            player.takeDamage(22);
+          }
+        } else if (this.behavior === 'kamikaze_bomber') {
+          this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (dist < 48) this.startTelegraph('circle', 0.35, 120);
+        } else if (this.behavior === 'flamethrower') {
+          if (this.attackCooldown <= 0 && dist < 280) this.startTelegraph('flame_cone', 0.6, 260);
+          else this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+        } else if (this.behavior === 'frost_spiral') {
+          if (this.attackCooldown <= 0) this.startTelegraph('ring', 0.5, 200);
+          else this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+        } else if (this.behavior === 'triple_fireball') {
+          if (this.attackCooldown <= 0 && dist < 360) this.startTelegraph('fan', 0.55, 340);
+          else this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+        } else if (this.behavior === 'bouncing_acid_triad') {
+          if (this.attackCooldown <= 0 && dist < 400) this.startTelegraph('fan', 0.6, 320);
+          else this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+        } else if (this.behavior === 'burrow_eruption') {
+          if (this.attackCooldown <= 0) {
+            this.isBurrowed = true;
+            this.telegraphTarget = { x: player.x, y: player.y };
+            this.startTelegraph('eruption', 1.0, 110);
+          }
+        } else if (this.behavior === 'titan_boss') {
+          updateBossHUD(this);
+          if (dist > 95) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0) {
+            const pattern = Math.floor(Math.random() * 3);
+            if (pattern === 0) this.startTelegraph('boss_scythe', 0.7, 180);
+            else if (pattern === 1) this.startTelegraph('boss_barrage', 0.6, 400);
+            else this.startTelegraph('boss_timestop', 0.8, 300);
+          }
+        } else {
+          if (dist > 60) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0 && dist < 100) this.startTelegraph('circle', 0.45, 70);
         }
 
         this.animTimer += effectiveDt;
         if (this.animTimer > 0.15) {
           this.animTimer = 0;
           this.animFrame = (this.animFrame + 1) % 3;
+        }
+      }
+
+      startTelegraph(type, duration, radiusOrRange) {
+        this.isTelegraphing = true;
+        this.telegraphType = type;
+        this.telegraphTimer = duration;
+        this.telegraphMax = duration;
+        this.telegraphParam = radiusOrRange;
+        this.telegraphAngle = this.angle;
+        this.telegraphTarget = { x: player.x, y: player.y };
+        this.animRow = 2;
+      }
+
+      executeAttack() {
+        this.animRow = 0;
+        this.attackCooldown = 1.8 + Math.random() * 1.2;
+        const distToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
+
+        if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
+          sound.playSlash();
+          createScreenShake(6);
+          if (distToPlayer <= this.telegraphParam + player.radius) {
+            player.takeDamage(this.behavior === 'kamikaze_bomber' ? 45 : 22);
+          }
+          if (this.behavior === 'kamikaze_bomber') {
+            this.takeDamage(999);
+            gameState.particles.push(new AnimatedFireExplosion(this.x, this.y, 140));
+          }
+        } else if (this.telegraphType === 'line') {
+          sound.playCast();
+          for (let i = -1; i <= 1; i++) {
+            const a = this.telegraphAngle + i * 0.2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*280, Math.sin(a)*280, 24, 'witch_orb', this));
+          }
+        } else if (this.telegraphType === 'fan') {
+          sound.playCast();
+          const projType = (this.behavior === 'triple_fireball' || this.behavior === 'magma_dropper') ? 'magma_ball' : (this.behavior === 'bouncing_acid_triad' ? 'bouncing_acid' : 'poison_dart');
+          for (let i = -2; i <= 2; i++) {
+            const a = this.telegraphAngle + i * 0.18;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*320, Math.sin(a)*320, 20, projType, this));
+          }
+        } else if (this.telegraphType === 'mortar') {
+          sound.playExplosion();
+          const target = this.telegraphTarget;
+          setTimeout(() => {
+            sound.playExplosion();
+            createScreenShake(10);
+            if (Math.hypot(player.x - target.x, player.y - target.y) <= 80) player.takeDamage(34);
+            gameState.particles.push(new AnimatedFireExplosion(target.x, target.y, 130));
+          }, 400);
+        } else if (this.telegraphType === 'ring') {
+          sound.playExplosion();
+          createScreenShake(8);
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*240, Math.sin(a)*240, 20, 'frost_shard', this));
+          }
+        } else if (this.telegraphType === 'rush') {
+          sound.playSlash();
+          const rushDist = 380;
+          this.x += Math.cos(this.telegraphAngle) * rushDist;
+          this.y += Math.sin(this.telegraphAngle) * rushDist;
+          if (Math.hypot(player.x - this.x, player.y - this.y) < 70) player.takeDamage(38);
+          createScreenShake(12);
+        } else if (this.telegraphType === 'eruption') {
+          this.isBurrowed = false;
+          this.x = this.telegraphTarget.x;
+          this.y = this.telegraphTarget.y;
+          sound.playExplosion();
+          createScreenShake(10);
+          if (Math.hypot(player.x - this.x, player.y - this.y) < 80) player.takeDamage(35);
+          gameState.particles.push(new Shockwave(this.x, this.y, 110, '#9333ea'));
+        } else if (this.telegraphType === 'boss_scythe') {
+          sound.playSlash();
+          createScreenShake(14);
+          if (distToPlayer < 180) player.takeDamage(42);
+          for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*280, Math.sin(a)*280, 26, 'time_shard', this));
+          }
+        } else if (this.telegraphType === 'boss_barrage') {
+          sound.playCast();
+          for (let i = 0; i < 14; i++) {
+            const a = (i / 14) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*300, Math.sin(a)*300, 24, 'time_shard', this));
+          }
+        } else if (this.telegraphType === 'boss_timestop') {
+          sound.playCast();
+          gameState.particles.push(new Shockwave(this.x, this.y, 500, '#eab308'));
+          player.takeDamage(20);
         }
       }
 
@@ -1674,13 +2181,28 @@ html_template = """<!DOCTYPE html>
         this.scorchTimer = 3.0;
       }
 
+      applyChill(duration) {
+        this.chillStacks++;
+        this.chillTimer = duration;
+      }
+
+      applyDoom(amount) {
+        this.doomDamage = amount;
+        this.doomTimer = 1.1;
+      }
+
       takeDamage(amount, source = 'normal', silent = false) {
         const intDmg = Math.round(amount);
         this.hp -= intDmg;
 
+        if (source === 'player' && hasBoon('aphrodite_strike')) {
+          this.isWeak = true;
+          this.weakTimer = 4.0;
+        }
+
         if (!silent) {
-          const color = source === 'slam' ? '#38bdf8' : (source === 'hex' ? '#fde047' : (source === 'cast' ? '#c084fc' : '#ffffff'));
-          gameState.particles.push(new FloatingText(this.x + (Math.random()-0.5)*20, this.y - 20, `${intDmg}`, color));
+          const color = source === 'slam' ? '#38bdf8' : (source === 'hex' ? '#fde047' : (source === 'cast' ? '#c084fc' : (source === 'doom' ? '#dc2626' : '#ffffff')));
+          gameState.particles.push(new FloatingText(this.x + (Math.random()-0.5)*20, this.y - 24, `${intDmg}`, color));
         }
 
         if (this.hp <= 0) {
@@ -1695,15 +2217,26 @@ html_template = """<!DOCTYPE html>
           gameState.kills++;
           sound.playHit();
 
+          if (hasBoon('ares_passive')) {
+            gameState.battleRageTimer = 5.0;
+          }
+
+          if (hasBoon('duo_supernova') && this.scorchStacks > 0) {
+            gameState.enemies.forEach(e => {
+              if (Math.hypot(e.x - this.x, e.y - this.y) < 220) e.takeDamage(180, 'supernova');
+            });
+            gameState.particles.push(new AnimatedFireExplosion(this.x, this.y, 220));
+          }
+
           const obols = Math.floor(Math.random() * 6) + 4;
           gameState.gold += obols;
           gameState.ashes += 2;
           sound.playGold();
           updateHUD();
 
-          gameState.particles.push(new Shockwave(this.x, this.y, this.radius * 2, '#2ae6b4'));
+          gameState.particles.push(new Shockwave(this.x, this.y, this.radius * 2.2, this.color));
 
-          if (this.type === 'chronos') {
+          if (this.typeKey === 'chronos') {
             document.getElementById('boss-hud').style.display = 'none';
             handleGameOver(true);
           } else if (gameState.enemies.length === 0) {
@@ -1713,45 +2246,89 @@ html_template = """<!DOCTYPE html>
       }
 
       draw(ctx) {
+        if (this.isBurrowed) return;
+
         ctx.save();
         ctx.translate(this.x, this.y);
 
+        if (this.isTelegraphing) {
+          const progress = 1 - (this.telegraphTimer / this.telegraphMax);
+          ctx.save();
+          if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
+            ctx.beginPath();
+            ctx.arc(0, 0, this.telegraphParam * progress, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+          } else if (this.telegraphType === 'line' || this.telegraphType === 'rush') {
+            ctx.rotate(this.telegraphAngle);
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(this.telegraphParam, 0);
+            ctx.stroke();
+          } else if (this.telegraphType === 'fan') {
+            ctx.rotate(this.telegraphAngle);
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, this.telegraphParam, -0.4, 0.4);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // Ambient Aura
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius * 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = this.color + '33';
+        ctx.fill();
+
         // Shadow
         ctx.beginPath();
-        ctx.ellipse(0, this.radius * 0.75, this.radius, this.radius * 0.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, this.radius * 0.8, this.radius, this.radius * 0.5, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
         ctx.fill();
 
-        const imgKey = this.type === 'shade' ? 'shade' : (this.type === 'witch' ? 'witch' : 'chronos');
-        const img = loadedImages[imgKey];
+        // Sprite Rendering (Specific Sheet & Coordinates)
+        const img = loadedImages[this.sheet];
         if (img && img.complete) {
-          const cellW = img.width / 3;
-          const cellH = img.height / 3;
-          const sx = this.animFrame * cellW;
-          const sy = this.animRow * cellH;
+          const cellW = img.width / this.cols;
+          const cellH = img.height / this.rows;
+          let sx = (this.sheet === 'monsters_beasts' || this.sheet === 'undead_cultists') ? (this.cellX * cellW) : (this.animFrame * cellW);
+          let sy = (this.sheet === 'monsters_beasts' || this.sheet === 'undead_cultists') ? (this.cellY * cellH) : (this.animRow * cellH);
 
           const facingLeft = Math.cos(this.angle) < 0;
           if (facingLeft) ctx.scale(-1, 1);
 
-          const drawSize = this.radius * 3.8;
+          const drawSize = this.radius * 3.6;
           ctx.drawImage(img, sx, sy, cellW, cellH, -drawSize/2, -drawSize/2, drawSize, drawSize);
         }
 
-        // Overhead health bar & Name
-        if (this.type !== 'chronos') {
-          const barW = 44;
-          const barH = 5;
+        // Overhead health bar & Type Name
+        if (this.typeKey !== 'chronos') {
+          const barW = Math.max(46, this.radius * 1.8);
+          const barH = 6;
           ctx.fillStyle = '#000';
-          ctx.fillRect(-barW/2, -this.radius - 14, barW, barH);
-          ctx.fillStyle = '#ef4444';
-          ctx.fillRect(-barW/2, -this.radius - 14, (this.hp / this.maxHp) * barW, barH);
+          ctx.fillRect(-barW/2, -this.radius - 20, barW, barH);
+          ctx.fillStyle = this.color;
+          ctx.fillRect(-barW/2, -this.radius - 20, (this.hp / this.maxHp) * barW, barH);
+
+          ctx.font = 'bold 9px Cinzel';
+          ctx.fillStyle = '#cbd5e1';
+          ctx.textAlign = 'center';
+          ctx.fillText(this.name, 0, -this.radius - 24);
         }
 
         ctx.restore();
       }
     }
 
-    // --- PROJECTILE CLASS ---
+    // --- PROJECTILE CLASS (Renders from new_projectiles.webp & clean_fx.webp) ---
     class Projectile {
       constructor(x, y, vx, vy, damage, type, owner) {
         this.x = x;
@@ -1761,8 +2338,8 @@ html_template = """<!DOCTYPE html>
         this.damage = damage;
         this.type = type;
         this.owner = owner;
-        this.radius = type === 'moon_sickle' ? 20 : 10;
-        this.lifetime = type === 'moon_sickle' ? 1.3 : 3.0;
+        this.radius = type === 'moon_sickle' ? 22 : (type === 'magma_ball' ? 18 : 12);
+        this.lifetime = type === 'moon_sickle' ? 1.3 : 3.5;
         this.angle = 0;
       }
 
@@ -1780,6 +2357,16 @@ html_template = """<!DOCTYPE html>
           this.vy = (dy / dist) * 620;
         }
 
+        if (this.type === 'witch_orb') {
+          const dx = player.x - this.x;
+          const dy = player.y - this.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > 10) {
+            this.vx += (dx / dist) * 120 * dt;
+            this.vy += (dy / dist) * 120 * dt;
+          }
+        }
+
         if (checkWallCollision(this.x, this.y, this.radius)) {
           this.destroy();
           return;
@@ -1790,6 +2377,7 @@ html_template = """<!DOCTYPE html>
             if (Math.hypot(enemy.x - this.x, enemy.y - this.y) <= this.radius + enemy.radius) {
               enemy.takeDamage(this.damage, 'projectile');
               sound.playHit();
+              gameState.particles.push(new HitSpark(enemy.x, enemy.y, '#c084fc'));
               if (this.type !== 'moon_sickle') this.destroy();
             }
           });
@@ -1811,37 +2399,39 @@ html_template = """<!DOCTYPE html>
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        const fxImg = loadedImages['fx'];
+        const cleanFx = loadedImages['clean_fx'];
+        const npImg = loadedImages['new_projectiles'];
+
         if (this.type === 'moon_sickle') {
-          if (fxImg && fxImg.complete) {
-            // fx.webp cell (1, 2) is silver moon crescent
-            const cw = fxImg.width / 3;
-            const ch = fxImg.height / 3;
-            ctx.drawImage(fxImg, cw * 2, ch, cw, ch, -22, -22, 44, 44);
+          if (cleanFx && cleanFx.complete) {
+            const sw = cleanFx.width / 2;
+            const sh = cleanFx.height;
+            ctx.drawImage(cleanFx, sw, 0, sw, sh, -24, -24, 48, 48);
           } else {
             ctx.strokeStyle = '#c084fc';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(0, 0, 18, 0, Math.PI * 1.3);
+            ctx.arc(0, 0, 22, 0, Math.PI * 1.3);
             ctx.stroke();
           }
-        } else if (this.type === 'witch_orb') {
-          ctx.fillStyle = '#a855f7';
-          ctx.beginPath();
-          ctx.arc(0, 0, 9, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (this.type === 'time_shard') {
-          ctx.fillStyle = '#facc15';
-          ctx.beginPath();
-          ctx.moveTo(14, 0);
-          ctx.lineTo(-9, -7);
-          ctx.lineTo(-9, 7);
-          ctx.closePath();
-          ctx.fill();
+        } else if (npImg && npImg.complete) {
+          const cw = npImg.width / 4;
+          const ch = npImg.height / 4;
+          let cellCol = 0, cellRow = 0;
+          if (this.type === 'poison_dart') { cellCol = 0; cellRow = 0; }
+          else if (this.type === 'frost_shard') { cellCol = 1; cellRow = 0; }
+          else if (this.type === 'magma_ball') { cellCol = 2; cellRow = 0; }
+          else if (this.type === 'bouncing_acid') { cellCol = 3; cellRow = 0; }
+          else if (this.type === 'doom_skull') { cellCol = 0; cellRow = 2; }
+          else if (this.type === 'clockwork_bomb') { cellCol = 1; cellRow = 2; }
+          else if (this.type === 'charm_heart') { cellCol = 2; cellRow = 2; }
+          else if (this.type === 'whirling_blade') { cellCol = 3; cellRow = 2; }
+
+          ctx.drawImage(npImg, cellCol * cw, cellRow * ch, cw, ch, -18, -18, 36, 36);
         } else {
           ctx.fillStyle = '#fde047';
           ctx.beginPath();
-          ctx.arc(0, 0, 6, 0, Math.PI * 2);
+          ctx.arc(0, 0, 8, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -1849,7 +2439,7 @@ html_template = """<!DOCTYPE html>
       }
     }
 
-    // --- ANIMATED ATTACK & ELEMENTAL EFFECTS (From attack_fx_anim.webp) ---
+    // --- ANIMATED ATTACK SWEEP & ELEMENTAL EFFECTS ---
     class AnimatedAttackSweep {
       constructor(x, y, angle, range, combo) {
         this.x = x;
@@ -1872,19 +2462,45 @@ html_template = """<!DOCTYPE html>
         ctx.rotate(this.angle);
         const animImg = loadedImages['attack_fx_anim'];
         if (animImg && animImg.complete) {
-          // Row 0 of attack_fx_anim is 4 frames of emerald slash sweep
           const cw = animImg.width / 4;
           const ch = animImg.height / 4;
           const sx = this.frame * cw;
           const sy = 0;
-          const drawW = this.range * 2.2;
-          const drawH = this.range * 2.2;
-          ctx.drawImage(animImg, sx, sy, cw, ch, -drawW * 0.2, -drawH / 2, drawW, drawH);
+          const drawW = this.range * 2.1;
+          const drawH = this.range * 2.1;
+          ctx.drawImage(animImg, sx, sy, cw, ch, -drawW * 0.15, -drawH / 2, drawW, drawH);
         } else {
           ctx.strokeStyle = '#2ae6b4';
           ctx.lineWidth = 6;
           ctx.beginPath();
           ctx.arc(0, 0, this.range, -Math.PI * 0.35, Math.PI * 0.35);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    class HitSpark {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.life = 0.15;
+        this.maxLife = 0.15;
+      }
+      update(dt) {
+        this.life -= dt;
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 4; i++) {
+          const a = (i / 4) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y);
+          ctx.lineTo(this.x + Math.cos(a) * 20, this.y + Math.sin(a) * 20);
           ctx.stroke();
         }
         ctx.restore();
@@ -1910,7 +2526,6 @@ html_template = """<!DOCTYPE html>
         ctx.translate(this.x, this.y);
         const animImg = loadedImages['attack_fx_anim'];
         if (animImg && animImg.complete) {
-          // Row 1 of attack_fx_anim is 4 frames of lightning strike
           const cw = animImg.width / 4;
           const ch = animImg.height / 4;
           const sx = this.frame * cw;
@@ -1940,7 +2555,6 @@ html_template = """<!DOCTYPE html>
         ctx.translate(this.x, this.y);
         const animImg = loadedImages['attack_fx_anim'];
         if (animImg && animImg.complete) {
-          // Row 2 of attack_fx_anim is 4 frames of magma fire explosion
           const cw = animImg.width / 4;
           const ch = animImg.height / 4;
           const sx = this.frame * cw;
@@ -1972,7 +2586,6 @@ html_template = """<!DOCTYPE html>
         ctx.rotate(this.angle);
         const animImg = loadedImages['attack_fx_anim'];
         if (animImg && animImg.complete) {
-          // Row 3 of attack_fx_anim is 4 frames of ocean wave splash
           const cw = animImg.width / 4;
           const ch = animImg.height / 4;
           const sx = this.frame * cw;
@@ -2091,6 +2704,57 @@ html_template = """<!DOCTYPE html>
       }
     }
 
+    class IceShardTrap {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.life = 3.0;
+      }
+      update(dt) {
+        this.life -= dt;
+        gameState.enemies.forEach(e => {
+          if (Math.hypot(e.x - this.x, e.y - this.y) < 30) {
+            e.takeDamage(80, 'frost');
+            e.applyChill(3.0);
+            this.life = 0;
+          }
+        });
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class CharmBurst {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.life = 0.5;
+      }
+      update(dt) {
+        this.life -= dt;
+        gameState.enemies.forEach(e => {
+          if (Math.hypot(e.x - this.x, e.y - this.y) < 90) {
+            e.isWeak = true;
+            e.weakTimer = 4.0;
+          }
+        });
+      }
+      draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.3)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 80, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
     class FloatingText {
       constructor(x, y, text, color) {
         this.x = x;
@@ -2119,10 +2783,10 @@ html_template = """<!DOCTYPE html>
       width: 1400,
       height: 900,
       pillars: [
-        { x: -350, y: -200, radius: 40 },
-        { x: 350, y: -200, radius: 40 },
-        { x: -350, y: 200, radius: 40 },
-        { x: 350, y: 200, radius: 40 }
+        { x: -380, y: -220, radius: 42 },
+        { x: 380, y: -220, radius: 42 },
+        { x: -380, y: 220, radius: 42 },
+        { x: 380, y: 220, radius: 42 }
       ],
       door: { x: 0, y: -410, radius: 48, isOpen: false }
     };
@@ -2157,9 +2821,9 @@ html_template = """<!DOCTYPE html>
 
       gameState.particles.push(new AnimatedLightningStrike(initialEnemy.x, initialEnemy.y, 140));
 
-      for (let step = 0; step < 3; step++) {
+      for (let step = 0; step < 4; step++) {
         let closest = null;
-        let minDist = 240;
+        let minDist = 260;
         gameState.enemies.forEach(e => {
           if (!hitList.includes(e)) {
             const d = Math.hypot(e.x - current.x, e.y - current.y);
@@ -2181,7 +2845,7 @@ html_template = """<!DOCTYPE html>
       }
     }
 
-    // --- CHAMBER PROGRESSION ---
+    // --- CHAMBER PROGRESSION & PROCEDURAL ENEMY GENERATOR ---
     function startChamber(chamberIndex) {
       gameState.chamber = chamberIndex;
       gameState.enemiesCleared = false;
@@ -2189,7 +2853,7 @@ html_template = """<!DOCTYPE html>
       gameState.projectiles = [];
       gameState.particles = [];
       player.x = 0;
-      player.y = 280;
+      player.y = 260;
 
       const titleEl = document.getElementById('chamber-name');
       const subEl = document.getElementById('chamber-sub');
@@ -2213,13 +2877,15 @@ html_template = """<!DOCTYPE html>
         titleEl.innerText = `EREBUS — CHAMBER ${chamberIndex}`;
         subEl.innerText = 'Underworld Depths';
 
-        const count = 3 + chamberIndex * 2;
+        const count = 4 + chamberIndex * 2;
+        const availableKeys = Object.keys(ENEMY_TYPES).filter(k => k !== 'chronos');
         gameState.enemies = [];
+
         for (let i = 0; i < count; i++) {
-          const type = Math.random() < 0.35 ? 'witch' : 'shade';
+          const typeKey = availableKeys[Math.floor(Math.random() * availableKeys.length)];
           const angle = Math.random() * Math.PI * 2;
-          const dist = 220 + Math.random() * 250;
-          gameState.enemies.push(new Enemy(Math.cos(angle) * dist, Math.sin(angle) * dist, type));
+          const dist = 200 + Math.random() * 280;
+          gameState.enemies.push(new Enemy(Math.cos(angle) * dist, Math.sin(angle) * dist, typeKey));
         }
       }
 
@@ -2231,7 +2897,7 @@ html_template = """<!DOCTYPE html>
       arena.door.isOpen = true;
       sound.playBoonChime();
 
-      const godKeys = ['zeus', 'hestia', 'poseidon', 'apollo', 'selene'];
+      const godKeys = Object.keys(GODS);
       const chosenGod = godKeys[Math.floor(Math.random() * godKeys.length)];
       setTimeout(() => {
         showBoonSelection(chosenGod);
@@ -2246,12 +2912,12 @@ html_template = """<!DOCTYPE html>
       const pctx = portraitCanvas.getContext('2d');
       pctx.clearRect(0, 0, 140, 140);
 
-      const godsImg = loadedImages['gods'];
+      const godsImg = loadedImages['all_10_gods'];
       if (godsImg && godsImg.complete) {
-        const col = god.portraitIndex % 3;
-        const row = Math.floor(god.portraitIndex / 3);
-        const cw = godsImg.width / 3;
-        const ch = godsImg.height / 2;
+        const col = god.portraitIndex % 5;
+        const row = Math.floor(god.portraitIndex / 5);
+        const cw = 256;
+        const ch = 256;
         pctx.drawImage(godsImg, col * cw, row * ch, cw, ch, 0, 0, 140, 140);
       } else {
         pctx.fillStyle = god.color;
@@ -2264,19 +2930,40 @@ html_template = """<!DOCTYPE html>
       const container = document.getElementById('boon-choices-container');
       container.innerHTML = '';
 
-      god.boons.forEach(boon => {
+      const availableDuos = DUO_BOONS.filter(duo => {
+        if (hasBoon(duo.id)) return false;
+        const [reqA, reqB] = duo.reqs;
+        const hasA = reqA.some(id => hasBoon(id));
+        const hasB = reqB.some(id => hasBoon(id));
+        return hasA && hasB;
+      });
+
+      const choices = [];
+
+      if (availableDuos.length > 0) {
+        const duo = availableDuos[Math.floor(Math.random() * availableDuos.length)];
+        choices.push({ ...duo, isDuo: true, slot: 'DUO BOON' });
+      }
+
+      const unownedBoons = god.boons.filter(b => !hasBoon(b.id));
+      while (choices.length < 3 && unownedBoons.length > 0) {
+        const idx = Math.floor(Math.random() * unownedBoons.length);
+        choices.push(unownedBoons.splice(idx, 1)[0]);
+      }
+
+      choices.forEach(boon => {
         const card = document.createElement('div');
-        card.className = 'boon-card';
+        card.className = `boon-card ${boon.isDuo ? 'duo-card' : ''}`;
         card.innerHTML = `
           <div>
-            <div class="boon-rarity rarity-rare">RARE BOON</div>
+            <div class="boon-rarity">${boon.isDuo ? '★ LEGENDARY DUO ★' : 'RARE BOON'}</div>
             <div class="boon-card-name">${boon.name}</div>
             <div class="boon-card-desc">${boon.desc}</div>
           </div>
-          <div class="boon-card-slot">Slot: ${boon.slot}</div>
+          <div class="boon-card-slot">${boon.isDuo ? `Synergy: ${boon.gods.join(' + ')}` : `Slot: ${boon.slot}`}</div>
         `;
         card.onclick = () => {
-          gameState.equippedBoons.push({ ...boon, godName: god.name });
+          gameState.equippedBoons.push({ ...boon, godName: boon.isDuo ? boon.gods.join(' & ') : god.name });
           modal.style.display = 'none';
           gameState.isPaused = false;
           sound.playBoonChime();
@@ -2383,10 +3070,10 @@ html_template = """<!DOCTYPE html>
       boonsList.innerHTML = '';
       gameState.equippedBoons.forEach(b => {
         const item = document.createElement('div');
-        item.className = 'boon-badge';
+        item.className = `boon-badge ${b.isDuo ? 'duo' : ''}`;
         item.innerHTML = `
           <div>
-            <div class="boon-badge-god">${b.godName}</div>
+            <div class="boon-badge-god">${b.isDuo ? '★ DUO SYNERGY' : b.godName}</div>
             <div class="boon-badge-name">${b.name}</div>
           </div>
         `;
@@ -2431,35 +3118,31 @@ html_template = """<!DOCTYPE html>
         screenShake = Math.max(0, screenShake - dt * 30);
       }
 
-      // Render Scene
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.save();
       ctx.translate(canvas.width / 2 - gameState.camera.x + shakeX, canvas.height / 2 - gameState.camera.y + shakeY);
 
-      // 1. Consistent Underworld Floor & Wall Tiles
+      // 1. Seamless Stone Floor & Walls
       drawChamberTiles(ctx);
 
-      // 2. Props (Exit Gate, Altar, Urns, Braziers)
+      // 2. Props (Exit Gate, Altar, Pillars with Torches)
       drawProps(ctx);
 
-      // 3. Lower Particles (Fire trails)
-      gameState.particles.forEach(p => { if (p instanceof FireTrail) p.draw(ctx); });
+      // 3. Lower Particles (Fire trails & Ice traps)
+      gameState.particles.forEach(p => { if (p instanceof FireTrail || p instanceof IceShardTrap) p.draw(ctx); });
 
-      // 4. Enemies
+      // 4. Enemies (Rendered with dedicated pre-rendered 3D models)
       gameState.enemies.forEach(e => e.draw(ctx));
 
       // 5. Player
       player.draw(ctx);
 
-      // 6. Projectiles
+      // 6. Projectiles (Rendered with new projectile models)
       gameState.projectiles.forEach(p => p.draw(ctx));
 
-      // 7. Upper Animated Attack Effects & Particles
-      gameState.particles.forEach(p => { if (!(p instanceof FireTrail)) p.draw(ctx); });
-
-      // 8. Dynamic Lighting & Gloom
-      drawDynamicLighting(ctx);
+      // 7. Upper Animated Attack Effects & Impact Sparks
+      gameState.particles.forEach(p => { if (!(p instanceof FireTrail) && !(p instanceof IceShardTrap)) p.draw(ctx); });
 
       ctx.restore();
 
@@ -2470,56 +3153,44 @@ html_template = """<!DOCTYPE html>
       const halfW = arena.width / 2;
       const halfH = arena.height / 2;
 
-      // Draw consistent dark obsidian floor
-      const tilesImg = loadedImages['consistent_tiles'];
-      if (tilesImg && tilesImg.complete) {
-        // Floor tile slice from top-left of consistent_tiles
-        // x: 0 to 500, y: 190 to 520
-        const sx = 10, sy = 200, sw = 480, sh = 320;
-        const tileSize = 160;
-        for (let x = -halfW; x < halfW; x += tileSize) {
-          for (let y = -halfH; y < halfH; y += tileSize) {
-            ctx.drawImage(tilesImg, sx, sy, sw, sh, x, y, tileSize, tileSize);
-          }
+      const floorImg = loadedImages['seamless_floor'];
+      if (floorImg && floorImg.complete) {
+        const pattern = ctx.createPattern(floorImg, 'repeat');
+        if (pattern) {
+          ctx.fillStyle = pattern;
+          ctx.fillRect(-halfW, -halfH, arena.width, arena.height);
+        } else {
+          ctx.fillStyle = '#1c152a';
+          ctx.fillRect(-halfW, -halfH, arena.width, arena.height);
         }
       } else {
-        ctx.fillStyle = '#140f1d';
+        ctx.fillStyle = '#1c152a';
         ctx.fillRect(-halfW, -halfH, arena.width, arena.height);
       }
 
-      // Golden center glyph
-      ctx.beginPath();
-      ctx.arc(0, 0, 190, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(230, 180, 80, 0.25)';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-
-      // Draw perimeter relief walls from consistent_tiles (bottom-left wall block)
+      const tilesImg = loadedImages['consistent_tiles'];
       if (tilesImg && tilesImg.complete) {
         const wallSx = 180, wallSy = 480, wallSw = 280, wallSh = 450;
-        const wallW = 80, wallH = 100;
-        // Top & Bottom wall rows
+        const wallW = 80, wallH = 90;
         for (let x = -halfW; x < halfW; x += wallW) {
-          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, x, -halfH - wallH + 15, wallW, wallH);
-          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, x, halfH - 15, wallW, wallH);
+          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, x, -halfH - wallH + 20, wallW, wallH);
+          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, x, halfH - 20, wallW, wallH);
         }
-        // Left & Right walls
         for (let y = -halfH; y < halfH; y += wallH) {
-          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, -halfW - wallW + 15, y, wallW, wallH);
-          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, halfW - 15, y, wallW, wallH);
+          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, -halfW - wallW + 20, y, wallW, wallH);
+          ctx.drawImage(tilesImg, wallSx, wallSy, wallSw, wallSh, halfW - 20, y, wallW, wallH);
         }
-      } else {
-        ctx.lineWidth = 18;
-        ctx.strokeStyle = '#2b1b0e';
-        ctx.strokeRect(-halfW - 9, -halfH - 9, arena.width + 18, arena.height + 18);
       }
+
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = '#3a2412';
+      ctx.strokeRect(-halfW, -halfH, arena.width, arena.height);
     }
 
     function drawProps(ctx) {
       const tilesImg = loadedImages['consistent_tiles'];
       const propsImg = loadedImages['props'];
 
-      // Draw Pillars (Right column with green torch from consistent_tiles)
       arena.pillars.forEach(pillar => {
         ctx.beginPath();
         ctx.ellipse(pillar.x, pillar.y + 24, pillar.radius * 1.1, pillar.radius * 0.55, 0, 0, Math.PI * 2);
@@ -2527,18 +3198,21 @@ html_template = """<!DOCTYPE html>
         ctx.fill();
 
         if (tilesImg && tilesImg.complete) {
-          // Column slice: x: 770 to 980, y: 150 to 920
           const px = 770, py = 150, pw = 210, ph = 770;
-          ctx.drawImage(tilesImg, px, py, pw, ph, pillar.x - 38, pillar.y - 120, 76, 155);
+          ctx.drawImage(tilesImg, px, py, pw, ph, pillar.x - 42, pillar.y - 130, 84, 165);
         } else {
           ctx.beginPath();
           ctx.arc(pillar.x, pillar.y, pillar.radius, 0, Math.PI * 2);
           ctx.fillStyle = '#2b1b0e';
           ctx.fill();
         }
+
+        ctx.beginPath();
+        ctx.arc(pillar.x, pillar.y - 120, 28, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(42, 230, 180, 0.3)';
+        ctx.fill();
       });
 
-      // Exit Gateway Door (From props.webp cell (0,2))
       const door = arena.door;
       ctx.save();
       ctx.translate(door.x, door.y);
@@ -2546,7 +3220,7 @@ html_template = """<!DOCTYPE html>
       if (propsImg && propsImg.complete) {
         const cw = propsImg.width / 3;
         const ch = propsImg.height / 3;
-        ctx.drawImage(propsImg, cw * 2, 0, cw, ch, -55, -95, 110, 110);
+        ctx.drawImage(propsImg, cw * 2, 0, cw, ch, -60, -100, 120, 120);
       } else {
         ctx.beginPath();
         ctx.arc(0, 0, door.radius, Math.PI, 0);
@@ -2555,45 +3229,13 @@ html_template = """<!DOCTYPE html>
       }
 
       if (door.isOpen) {
-        ctx.font = 'bold 14px Cinzel';
+        ctx.font = 'bold 15px Cinzel';
         ctx.fillStyle = '#fff2a8';
         ctx.textAlign = 'center';
-        ctx.fillText('ENTER CHAMBER', 0, -25);
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 6;
+        ctx.fillText('ENTER CHAMBER', 0, -30);
       }
-      ctx.restore();
-    }
-
-    function drawDynamicLighting(ctx) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
-      const halfW = arena.width / 2 + 300;
-      const halfH = arena.height / 2 + 300;
-
-      ctx.fillStyle = 'rgba(6, 4, 10, 0.48)';
-      ctx.fillRect(-halfW, -halfH, halfW * 2, halfH * 2);
-
-      ctx.globalCompositeOperation = 'destination-out';
-
-      // Player light
-      const grad = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 250);
-      grad.addColorStop(0, 'rgba(0, 0, 0, 0.95)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, 250, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Pillar torch lights
-      arena.pillars.forEach(p => {
-        const pGrad = ctx.createRadialGradient(p.x, p.y - 70, 5, p.x, p.y - 70, 170);
-        pGrad.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
-        pGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = pGrad;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y - 70, 170, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
       ctx.restore();
     }
 
@@ -2611,4 +3253,4 @@ final_html = html_template.replace('%ASSETS_JSON%', json.dumps(b64_data))
 with open('index.html', 'w', encoding='utf-8') as f:
     f.write(final_html)
 
-print(f"Successfully generated index.html ({len(final_html)} bytes)!")
+print(f"Successfully compiled Complete Edition index.html ({len(final_html)} bytes)!")
