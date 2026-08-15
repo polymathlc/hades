@@ -7,7 +7,8 @@ assets_keys = [
     'hero', 'shade', 'witch', 'chronos',
     'consistent_tiles', 'seamless_floor', 'props', 'ui',
     'clean_fx', 'attack_fx_anim',
-    'all_10_gods', 'monsters_beasts', 'undead_cultists', 'new_projectiles'
+    'all_10_gods', 'monsters_beasts', 'undead_cultists', 'new_projectiles',
+    'minibosses'
 ]
 
 b64_data = {}
@@ -24,7 +25,7 @@ html_template = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>HADES II: CHRONOS FALL - Pre-rendered 3D Roguelike (Complete Edition)</title>
+  <title>HADES II: CHRONOS FALL - 100 Chambers Hardcore Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Philosopher:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -43,6 +44,7 @@ html_template = """<!DOCTYPE html>
       --olympus-blue: #38bdf8;
       --crimson: #ef4444;
       --duo-gold: #fbbf24;
+      --boss-gold: #facc15;
       --font-title: 'Cinzel', serif;
       --font-body: 'Philosopher', sans-serif;
     }
@@ -332,13 +334,13 @@ html_template = """<!DOCTYPE html>
       100% { transform: scale(1.08); filter: brightness(1.35); }
     }
 
-    /* Boss Health Bar */
+    /* Boss / Mini-Boss Health Bar */
     .boss-bar-container {
       position: absolute;
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      width: 640px;
+      width: 680px;
       display: none;
       flex-direction: column;
       align-items: center;
@@ -381,7 +383,7 @@ html_template = """<!DOCTYPE html>
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(4, 3, 7, 0.9);
+      background: rgba(4, 3, 7, 0.92);
       backdrop-filter: blur(8px);
       display: none;
       justify-content: center;
@@ -646,7 +648,7 @@ html_template = """<!DOCTYPE html>
         </div>
 
         <div class="top-center-hud">
-          <div id="chamber-name" class="chamber-title">EREBUS - CHAMBER 1</div>
+          <div id="chamber-name" class="chamber-title">EREBUS - CHAMBER 1 / 100</div>
           <div id="chamber-sub" class="chamber-subtitle">Underworld Gateway</div>
         </div>
 
@@ -664,7 +666,7 @@ html_template = """<!DOCTYPE html>
       <div class="controls-banner">
         <span><span class="key-badge">WASD</span> Move</span>
         <span><span class="key-badge">L-CLICK / J</span> Strike</span>
-        <span><span class="key-badge">R-CLICK / K</span> Special</span>
+        <span><span class="key-badge">R-CLICK / K</span> Special (Nerfed -80%)</span>
         <span><span class="key-badge">Q / E</span> Cast</span>
         <span><span class="key-badge">SPACE / SHIFT</span> Dash</span>
         <span><span class="key-badge">F</span> Hex</span>
@@ -696,7 +698,7 @@ html_template = """<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- Boss Health Bar -->
+        <!-- Boss / Mini-Boss Health Bar -->
         <div id="boss-hud" class="boss-bar-container">
           <div id="boss-name-text" class="boss-name">CHRONOS — TITAN OF TIME</div>
           <div class="boss-bar-frame">
@@ -747,7 +749,7 @@ html_template = """<!DOCTYPE html>
         <div id="gameover-title" class="modal-title">DEATH APPROACHES</div>
         <div id="gameover-subtitle" class="modal-subtitle">There is no escape from the Underworld. Return to the Crossroads.</div>
         <div style="margin: 20px 0; font-size: 16px; color: var(--gold-light);">
-          <div>Chambers Cleared: <span id="stats-chambers">0</span></div>
+          <div>Chambers Cleared: <span id="stats-chambers">0</span> / 100</div>
           <div>Enemies Vanquished: <span id="stats-kills">0</span></div>
           <div>Ashes Collected: <span id="stats-ashes">0</span></div>
         </div>
@@ -758,10 +760,9 @@ html_template = """<!DOCTYPE html>
 
   <script>
     /* ==========================================================================
-       HADES 2 COMPLETE ENGINE: 30+ ENEMIES, BULLET PATTERNS, 10 GODS & DUO BOONS
+       HADES 2 ENGINE: 100 CHAMBERS, 4 MINIBOSSES, 20X CHRONOS, NERFED SPECIAL
        ========================================================================== */
 
-    // --- EMBEDDED PRE-RENDERED 3D ASSETS ---
     const ASSETS_DATA = %ASSETS_JSON%;
 
     const loadedImages = {};
@@ -771,7 +772,7 @@ html_template = """<!DOCTYPE html>
       loadedImages[key] = img;
     }
 
-    // --- PROCEDURAL SOUND SYNTHESIS ENGINE (Web Audio API) ---
+    // --- PROCEDURAL SOUND SYNTHESIS ENGINE ---
     class SoundEngine {
       constructor() {
         this.ctx = null;
@@ -1293,6 +1294,7 @@ html_template = """<!DOCTYPE html>
     // --- GAME STATE ---
     const gameState = {
       chamber: 1,
+      maxChambers: 100,
       chamberType: 'normal',
       enemiesCleared: false,
       kills: 0,
@@ -1314,50 +1316,56 @@ html_template = """<!DOCTYPE html>
       battleRageTimer: 0
     };
 
-    // --- 30+ ENEMY DEFINITIONS & SPRITE SHEETS MAPPING ---
+    // --- 30+ ENEMY DEFINITIONS (All standard enemies 2x stronger, Mini-bosses & 20x Chronos) ---
     const ENEMY_TYPES = {
-      // 1. Monsters & Beasts (Mapped to monsters_beasts.webp: 3x2 grid)
-      minotaur_brute: { name: 'Minotaur Brute', maxHp: 420, speed: 90, radius: 40, color: '#b91c1c', sheet: 'monsters_beasts', cellX: 0, cellY: 0, cols: 3, rows: 2, behavior: 'bull_rush' },
-      cerberus_hound: { name: 'Cerberus Houndling', maxHp: 290, speed: 190, radius: 32, color: '#b45309', sheet: 'monsters_beasts', cellX: 1, cellY: 0, cols: 3, rows: 2, behavior: 'triple_fireball' },
-      tartarus_behemoth: { name: 'Tartarus Behemoth', maxHp: 600, speed: 60, radius: 48, color: '#78716c', sheet: 'monsters_beasts', cellX: 2, cellY: 0, cols: 3, rows: 2, behavior: 'earthquake' },
-      cyclops_smasher: { name: 'Cyclops Smasher', maxHp: 440, speed: 75, radius: 42, color: '#71717a', sheet: 'monsters_beasts', cellX: 0, cellY: 1, cols: 3, rows: 2, behavior: 'quad_boulder_slam' },
-      gorgon_viper: { name: 'Gorgon Viper', maxHp: 145, speed: 180, radius: 25, color: '#15803d', sheet: 'monsters_beasts', cellX: 1, cellY: 1, cols: 3, rows: 2, behavior: 'poison_fan' },
-      lava_crag_crab: { name: 'Lava Crag Crab', maxHp: 340, speed: 110, radius: 35, color: '#c2410c', sheet: 'monsters_beasts', cellX: 2, cellY: 1, cols: 3, rows: 2, behavior: 'magma_dropper' },
+      // 1. Mini-Bosses (Mapped to minibosses.webp: 2x2 grid)
+      asterius_king: { name: 'Asterius — Minotaur King', isMiniBoss: true, maxHp: 8500, speed: 110, radius: 52, color: '#f59e0b', sheet: 'minibosses', cellX: 0, cellY: 0, cols: 2, rows: 2, behavior: 'miniboss_asterius' },
+      hydra_prime: { name: 'Lernaean Bone Hydra Prime', isMiniBoss: true, maxHp: 16000, speed: 70, radius: 56, color: '#10b981', sheet: 'minibosses', cellX: 1, cellY: 0, cols: 2, rows: 2, behavior: 'miniboss_hydra' },
+      hecate_matron: { name: 'Hecate — Witch Matron', isMiniBoss: true, maxHp: 26000, speed: 120, radius: 48, color: '#8b5cf6', sheet: 'minibosses', cellX: 0, cellY: 1, cols: 2, rows: 2, behavior: 'miniboss_hecate' },
+      cerberus_prime: { name: 'Cerberus Prime — Infernal Guardian', isMiniBoss: true, maxHp: 38000, speed: 180, radius: 55, color: '#ef4444', sheet: 'minibosses', cellX: 1, cellY: 1, cols: 2, rows: 2, behavior: 'miniboss_cerberus' },
 
-      // 2. Undead & Cultists (Mapped to undead_cultists.webp: 3x2 grid)
-      bloodless_screamer: { name: 'Bloodless Screamer', maxHp: 100, speed: 230, radius: 22, color: '#f43f5e', sheet: 'undead_cultists', cellX: 0, cellY: 0, cols: 3, rows: 2, behavior: 'screamer' },
-      satyr_cultist: { name: 'Satyr Cultist', maxHp: 130, speed: 175, radius: 25, color: '#84cc16', sheet: 'undead_cultists', cellX: 1, cellY: 0, cols: 3, rows: 2, behavior: 'poison_darts' },
-      phantasm_cloaker: { name: 'Phantasm Cloaker', maxHp: 120, speed: 160, radius: 24, color: '#9333ea', sheet: 'undead_cultists', cellX: 2, cellY: 0, cols: 3, rows: 2, behavior: 'stealth_backstab' },
-      doom_herald: { name: 'Doom Herald', maxHp: 260, speed: 110, radius: 32, color: '#ef4444', sheet: 'undead_cultists', cellX: 0, cellY: 1, cols: 3, rows: 2, behavior: 'doom_runes' },
-      bone_chariot: { name: 'Bone Chariot', maxHp: 250, speed: 310, radius: 32, color: '#d97706', sheet: 'undead_cultists', cellX: 1, cellY: 1, cols: 3, rows: 2, behavior: 'wall_bounce_charger' },
-      automaton_sentry: { name: 'Automaton Sentry', maxHp: 320, speed: 0, radius: 34, color: '#ca8a04', sheet: 'undead_cultists', cellX: 2, cellY: 1, cols: 3, rows: 2, behavior: 'dual_laser_turret' },
+      // 2. Monsters & Beasts (Mapped to monsters_beasts.webp: 3x2 grid) (HP 2x)
+      minotaur_brute: { name: 'Minotaur Brute', maxHp: 840, speed: 90, radius: 40, color: '#b91c1c', sheet: 'monsters_beasts', cellX: 0, cellY: 0, cols: 3, rows: 2, behavior: 'bull_rush' },
+      cerberus_hound: { name: 'Cerberus Houndling', maxHp: 580, speed: 190, radius: 32, color: '#b45309', sheet: 'monsters_beasts', cellX: 1, cellY: 0, cols: 3, rows: 2, behavior: 'triple_fireball' },
+      tartarus_behemoth: { name: 'Tartarus Behemoth', maxHp: 1200, speed: 60, radius: 48, color: '#78716c', sheet: 'monsters_beasts', cellX: 2, cellY: 0, cols: 3, rows: 2, behavior: 'earthquake' },
+      cyclops_smasher: { name: 'Cyclops Smasher', maxHp: 880, speed: 75, radius: 42, color: '#71717a', sheet: 'monsters_beasts', cellX: 0, cellY: 1, cols: 3, rows: 2, behavior: 'quad_boulder_slam' },
+      gorgon_viper: { name: 'Gorgon Viper', maxHp: 290, speed: 180, radius: 25, color: '#15803d', sheet: 'monsters_beasts', cellX: 1, cellY: 1, cols: 3, rows: 2, behavior: 'poison_fan' },
+      lava_crag_crab: { name: 'Lava Crag Crab', maxHp: 680, speed: 110, radius: 35, color: '#c2410c', sheet: 'monsters_beasts', cellX: 2, cellY: 1, cols: 3, rows: 2, behavior: 'magma_dropper' },
 
-      // 3. Shades & Swarmers (Mapped to shade.webp)
-      shade_wretch: { name: 'Shade Wretch', maxHp: 85, speed: 200, radius: 24, color: '#2ae6b4', sheet: 'shade', behavior: 'swarmer' },
-      shade_bruiser: { name: 'Shade Bruiser', maxHp: 280, speed: 85, radius: 36, color: '#0891b2', sheet: 'shade', behavior: 'slammer' },
-      blast_beetle: { name: 'Blast Beetle', maxHp: 75, speed: 260, radius: 20, color: '#dc2626', sheet: 'shade', behavior: 'kamikaze_bomber' },
-      clockwork_saw: { name: 'Clockwork Saw', maxHp: 180, speed: 270, radius: 24, color: '#eab308', sheet: 'shade', behavior: 'blade_bouncer' },
-      stygian_jellyfish: { name: 'Stygian Jellyfish', maxHp: 175, speed: 70, radius: 30, color: '#06b6d4', sheet: 'shade', behavior: 'electric_pulse_ring' },
-      hydra_spawn: { name: 'Hydra Spawn', maxHp: 290, speed: 85, radius: 33, color: '#16a34a', sheet: 'shade', behavior: 'bouncing_acid_triad' },
-      shadow_reaper: { name: 'Shadow Reaper', maxHp: 170, speed: 140, radius: 28, color: '#6366f1', sheet: 'shade', behavior: 'teleport_scythe' },
-      void_lurker: { name: 'Void Lurker', maxHp: 155, speed: 165, radius: 26, color: '#4c1d95', sheet: 'shade', behavior: 'burrow_eruption' },
+      // 3. Undead & Cultists (Mapped to undead_cultists.webp: 3x2 grid) (HP 2x)
+      bloodless_screamer: { name: 'Bloodless Screamer', maxHp: 200, speed: 230, radius: 22, color: '#f43f5e', sheet: 'undead_cultists', cellX: 0, cellY: 0, cols: 3, rows: 2, behavior: 'screamer' },
+      satyr_cultist: { name: 'Satyr Cultist', maxHp: 260, speed: 175, radius: 25, color: '#84cc16', sheet: 'undead_cultists', cellX: 1, cellY: 0, cols: 3, rows: 2, behavior: 'poison_darts' },
+      phantasm_cloaker: { name: 'Phantasm Cloaker', maxHp: 240, speed: 160, radius: 24, color: '#9333ea', sheet: 'undead_cultists', cellX: 2, cellY: 0, cols: 3, rows: 2, behavior: 'stealth_backstab' },
+      doom_herald: { name: 'Doom Herald', maxHp: 520, speed: 110, radius: 32, color: '#ef4444', sheet: 'undead_cultists', cellX: 0, cellY: 1, cols: 3, rows: 2, behavior: 'doom_runes' },
+      bone_chariot: { name: 'Bone Chariot', maxHp: 500, speed: 310, radius: 32, color: '#d97706', sheet: 'undead_cultists', cellX: 1, cellY: 1, cols: 3, rows: 2, behavior: 'wall_bounce_charger' },
+      automaton_sentry: { name: 'Automaton Sentry', maxHp: 640, speed: 0, radius: 34, color: '#ca8a04', sheet: 'undead_cultists', cellX: 2, cellY: 1, cols: 3, rows: 2, behavior: 'dual_laser_turret' },
 
-      // 4. Casters (Mapped to witch.webp)
-      witch_siren: { name: 'Witch Siren', maxHp: 140, speed: 120, radius: 28, color: '#a855f7', sheet: 'witch', behavior: 'triple_orb' },
-      witch_archmage: { name: 'Witch Archmage', maxHp: 210, speed: 95, radius: 30, color: '#c084fc', sheet: 'witch', behavior: 'pentagram_mortar' },
-      flame_cultist: { name: 'Flame Cultist', maxHp: 160, speed: 115, radius: 26, color: '#ea580c', sheet: 'witch', behavior: 'flamethrower' },
-      frost_banshee: { name: 'Frost Banshee', maxHp: 175, speed: 130, radius: 27, color: '#38bdf8', sheet: 'witch', behavior: 'frost_spiral' },
-      chrono_mage: { name: 'Chrono-Mage', maxHp: 240, speed: 105, radius: 30, color: '#fbbf24', sheet: 'witch', behavior: 'time_rift' },
-      time_weever: { name: 'Time Weever', maxHp: 190, speed: 125, radius: 27, color: '#eab308', sheet: 'witch', behavior: 'time_tether_bombs' },
-      sirens_choir: { name: 'Sirens Choir', maxHp: 200, speed: 110, radius: 28, color: '#ec4899', sheet: 'witch', behavior: 'charm_pulse' },
-      soul_necromancer: { name: 'Soul Necromancer', maxHp: 230, speed: 100, radius: 29, color: '#8b5cf6', sheet: 'witch', behavior: 'summon_skeleton_shades' },
+      // 4. Shades & Swarmers (Mapped to shade.webp) (HP 2x)
+      shade_wretch: { name: 'Shade Wretch', maxHp: 170, speed: 200, radius: 24, color: '#2ae6b4', sheet: 'shade', behavior: 'swarmer' },
+      shade_bruiser: { name: 'Shade Bruiser', maxHp: 560, speed: 85, radius: 36, color: '#0891b2', sheet: 'shade', behavior: 'slammer' },
+      blast_beetle: { name: 'Blast Beetle', maxHp: 150, speed: 260, radius: 20, color: '#dc2626', sheet: 'shade', behavior: 'kamikaze_bomber' },
+      clockwork_saw: { name: 'Clockwork Saw', maxHp: 360, speed: 270, radius: 24, color: '#eab308', sheet: 'shade', behavior: 'blade_bouncer' },
+      stygian_jellyfish: { name: 'Stygian Jellyfish', maxHp: 350, speed: 70, radius: 30, color: '#06b6d4', sheet: 'shade', behavior: 'electric_pulse_ring' },
+      hydra_spawn: { name: 'Hydra Spawn', maxHp: 580, speed: 85, radius: 33, color: '#16a34a', sheet: 'shade', behavior: 'bouncing_acid_triad' },
+      shadow_reaper: { name: 'Shadow Reaper', maxHp: 340, speed: 140, radius: 28, color: '#6366f1', sheet: 'shade', behavior: 'teleport_scythe' },
+      void_lurker: { name: 'Void Lurker', maxHp: 310, speed: 165, radius: 26, color: '#4c1d95', sheet: 'shade', behavior: 'burrow_eruption' },
 
-      // 5. Elite & Boss (Mapped to chronos.webp)
-      chronos_vanguard: { name: 'Chronos Vanguard', maxHp: 360, speed: 110, radius: 36, color: '#d97706', sheet: 'chronos', behavior: 'shield_spearman' },
-      chronos: { name: 'Chronos — Titan of Time', maxHp: 3400, speed: 100, radius: 58, color: '#eab308', sheet: 'chronos', behavior: 'titan_boss' }
+      // 5. Casters (Mapped to witch.webp) (HP 2x)
+      witch_siren: { name: 'Witch Siren', maxHp: 280, speed: 120, radius: 28, color: '#a855f7', sheet: 'witch', behavior: 'triple_orb' },
+      witch_archmage: { name: 'Witch Archmage', maxHp: 420, speed: 95, radius: 30, color: '#c084fc', sheet: 'witch', behavior: 'pentagram_mortar' },
+      flame_cultist: { name: 'Flame Cultist', maxHp: 320, speed: 115, radius: 26, color: '#ea580c', sheet: 'witch', behavior: 'flamethrower' },
+      frost_banshee: { name: 'Frost Banshee', maxHp: 350, speed: 130, radius: 27, color: '#38bdf8', sheet: 'witch', behavior: 'frost_spiral' },
+      chrono_mage: { name: 'Chrono-Mage', maxHp: 480, speed: 105, radius: 30, color: '#fbbf24', sheet: 'witch', behavior: 'time_rift' },
+      time_weever: { name: 'Time Weever', maxHp: 380, speed: 125, radius: 27, color: '#eab308', sheet: 'witch', behavior: 'time_tether_bombs' },
+      sirens_choir: { name: 'Sirens Choir', maxHp: 400, speed: 110, radius: 28, color: '#ec4899', sheet: 'witch', behavior: 'charm_pulse' },
+      soul_necromancer: { name: 'Soul Necromancer', maxHp: 460, speed: 100, radius: 29, color: '#8b5cf6', sheet: 'witch', behavior: 'summon_skeleton_shades' },
+
+      // 6. Elite & Final Boss (CHRONOS 20X STRONGER = 68,000 HP!)
+      chronos_vanguard: { name: 'Chronos Vanguard', maxHp: 720, speed: 110, radius: 36, color: '#d97706', sheet: 'chronos', behavior: 'shield_spearman' },
+      chronos: { name: 'Chronos — Titan of Time (Colossal)', isBoss: true, maxHp: 68000, speed: 115, radius: 64, color: '#eab308', sheet: 'chronos', behavior: 'titan_boss_20x' }
     };
 
-    // --- PLAYER CLASS ---
+    // --- PLAYER CLASS (Special Nerfed by 80%) ---
     class Player {
       constructor() {
         this.x = 0;
@@ -1595,7 +1603,8 @@ html_template = """<!DOCTYPE html>
         sound.playSlash();
 
         const spd = 580;
-        let specDmg = 52 * (1 + gameState.upgrades.damage * 0.1);
+        // NERFED BY 80%: Base damage 10.4 (down from 52)
+        let specDmg = 10.4 * (1 + gameState.upgrades.damage * 0.1);
         if (gameState.battleRageTimer > 0) specDmg *= 1.5;
 
         gameState.projectiles.push(new Projectile(
@@ -1859,7 +1868,7 @@ html_template = """<!DOCTYPE html>
 
     const player = new Player();
 
-    // --- ENEMY CLASS (Renders from monsters_beasts, undead_cultists, shade, witch, chronos) ---
+    // --- ENEMY CLASS (Supports Mini-Bosses & 20x Chronos) ---
     class Enemy {
       constructor(x, y, typeKey) {
         this.x = x;
@@ -1867,7 +1876,12 @@ html_template = """<!DOCTYPE html>
         this.typeKey = typeKey;
         const conf = ENEMY_TYPES[typeKey] || ENEMY_TYPES['shade_wretch'];
         this.name = conf.name;
-        this.maxHp = conf.maxHp;
+        this.isBoss = conf.isBoss || false;
+        this.isMiniBoss = conf.isMiniBoss || false;
+
+        // Scale HP based on Chamber depth
+        const depthMult = 1.0 + (gameState.chamber - 1) * 0.025;
+        this.maxHp = Math.round(conf.maxHp * (this.isBoss || this.isMiniBoss ? 1.0 : depthMult));
         this.hp = this.maxHp;
         this.speed = conf.speed;
         this.baseSpeed = conf.speed;
@@ -1954,6 +1968,11 @@ html_template = """<!DOCTYPE html>
         const dist = Math.hypot(dx, dy);
         this.angle = Math.atan2(dy, dx);
 
+        // Update Boss / Mini-Boss HUD
+        if (this.isBoss || this.isMiniBoss) {
+          updateBossHUD(this);
+        }
+
         if (this.isTelegraphing) {
           this.telegraphTimer -= effectiveDt;
           if (this.telegraphTimer <= 0) {
@@ -1965,53 +1984,80 @@ html_template = """<!DOCTYPE html>
 
         if (this.attackCooldown > 0) this.attackCooldown -= effectiveDt;
 
-        if (this.behavior === 'swarmer') {
-          if (dist > 45) {
-            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-            this.animRow = 1;
-          } else if (this.attackCooldown <= 0) {
-            this.startTelegraph('circle', 0.45, 60);
+        // --- MINI-BOSS BEHAVIORS ---
+        if (this.behavior === 'miniboss_asterius') {
+          if (dist > 95) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0) {
+            const pat = Math.floor(Math.random() * 3);
+            if (pat === 0) this.startTelegraph('boss_axe_cleave', 0.65, 170);
+            else if (pat === 1) this.startTelegraph('boss_leap_slam', 0.85, 220);
+            else this.startTelegraph('rush', 0.75, 450);
           }
+        } else if (this.behavior === 'miniboss_hydra') {
+          if (this.attackCooldown <= 0) {
+            const pat = Math.floor(Math.random() * 2);
+            if (pat === 0) this.startTelegraph('hydra_barrage', 0.65, 380);
+            else this.startTelegraph('hydra_slam', 0.8, 200);
+          }
+        } else if (this.behavior === 'miniboss_hecate') {
+          if (dist < 180) this.moveWithCollision(-(dx / dist) * moveSpeed * effectiveDt, -(dy / dist) * moveSpeed * effectiveDt);
+          else if (dist > 320) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0) {
+            const pat = Math.floor(Math.random() * 3);
+            if (pat === 0) this.startTelegraph('hecate_moon_beams', 0.6, 400);
+            else if (pat === 1) this.startTelegraph('hecate_polymorph', 0.75, 240);
+            else this.startTelegraph('mortar', 0.8, 160);
+          }
+        } else if (this.behavior === 'miniboss_cerberus') {
+          if (dist > 85) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0) {
+            const pat = Math.floor(Math.random() * 3);
+            if (pat === 0) this.startTelegraph('cerberus_magma_breath', 0.6, 360);
+            else if (pat === 1) this.startTelegraph('cerberus_pounce', 0.75, 240);
+            else this.startTelegraph('ring', 0.5, 220);
+          }
+        } else if (this.behavior === 'titan_boss_20x') {
+          // FINAL BOSS: CHRONOS 20X STRONGER
+          if (dist > 95) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          if (this.attackCooldown <= 0) {
+            const hpPct = this.hp / this.maxHp;
+            const pat = Math.floor(Math.random() * (hpPct < 0.33 ? 5 : (hpPct < 0.66 ? 4 : 3)));
+            if (pat === 0) this.startTelegraph('boss_scythe', 0.65, 200);
+            else if (pat === 1) this.startTelegraph('boss_barrage', 0.55, 450);
+            else if (pat === 2) this.startTelegraph('boss_timestop', 0.75, 360);
+            else if (pat === 3) this.startTelegraph('chronos_orbital_lasers', 0.7, 500);
+            else this.startTelegraph('chronos_blitz', 0.5, 450);
+          }
+        }
+        // --- STANDARD ENEMY BEHAVIORS ---
+        else if (this.behavior === 'swarmer') {
+          if (dist > 45) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          else if (this.attackCooldown <= 0) this.startTelegraph('circle', 0.45, 60);
         } else if (this.behavior === 'slammer') {
-          if (dist > 75) {
-            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-            this.animRow = 1;
-          } else if (this.attackCooldown <= 0) {
-            this.startTelegraph('circle', 0.7, 130);
-          }
+          if (dist > 75) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
+          else if (this.attackCooldown <= 0) this.startTelegraph('circle', 0.7, 130);
         } else if (this.behavior === 'triple_orb') {
           if (dist < 200) this.moveWithCollision(-(dx / dist) * moveSpeed * effectiveDt, -(dy / dist) * moveSpeed * effectiveDt);
           else if (dist > 360) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-          if (this.attackCooldown <= 0 && dist < 500) {
-            this.startTelegraph('line', 0.6, 400);
-          }
+          if (this.attackCooldown <= 0 && dist < 500) this.startTelegraph('line', 0.6, 400);
         } else if (this.behavior === 'pentagram_mortar') {
           if (dist < 260) this.moveWithCollision(-(dx / dist) * moveSpeed * effectiveDt, -(dy / dist) * moveSpeed * effectiveDt);
-          if (this.attackCooldown <= 0) {
-            this.startTelegraph('mortar', 0.8, 140);
-          }
+          if (this.attackCooldown <= 0) this.startTelegraph('mortar', 0.8, 140);
         } else if (this.behavior === 'poison_fan' || this.behavior === 'poison_darts') {
           if (dist > 180) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-          if (this.attackCooldown <= 0) {
-            this.startTelegraph('fan', 0.5, 300);
-          }
+          if (this.attackCooldown <= 0) this.startTelegraph('fan', 0.5, 300);
         } else if (this.behavior === 'screamer') {
           this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-          if (this.attackCooldown <= 0 && dist < 120) {
-            this.startTelegraph('ring', 0.4, 150);
-          }
+          if (this.attackCooldown <= 0 && dist < 120) this.startTelegraph('ring', 0.4, 150);
         } else if (this.behavior === 'bull_rush') {
-          if (this.attackCooldown <= 0 && dist < 420) {
-            this.startTelegraph('rush', 0.75, 450);
-          } else {
-            this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-          }
+          if (this.attackCooldown <= 0 && dist < 420) this.startTelegraph('rush', 0.75, 450);
+          else this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
         } else if (this.behavior === 'dual_laser_turret') {
           this.angle += effectiveDt * 1.2;
           if (this.attackCooldown <= 0) {
             this.attackCooldown = 0.15;
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle)*360, Math.sin(this.angle)*360, 14, 'laser_shard', this));
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle+Math.PI)*360, Math.sin(this.angle+Math.PI)*360, 14, 'laser_shard', this));
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle)*360, Math.sin(this.angle)*360, 24, 'laser_shard', this));
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(this.angle+Math.PI)*360, Math.sin(this.angle+Math.PI)*360, 24, 'laser_shard', this));
           }
         } else if (this.behavior === 'magma_dropper') {
           this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
@@ -2034,7 +2080,7 @@ html_template = """<!DOCTYPE html>
             this.vy = -this.vy;
           }
           if (Math.hypot(player.x - this.x, player.y - this.y) < this.radius + player.radius) {
-            player.takeDamage(22);
+            player.takeDamage(38);
           }
         } else if (this.behavior === 'kamikaze_bomber') {
           this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
@@ -2056,15 +2102,6 @@ html_template = """<!DOCTYPE html>
             this.isBurrowed = true;
             this.telegraphTarget = { x: player.x, y: player.y };
             this.startTelegraph('eruption', 1.0, 110);
-          }
-        } else if (this.behavior === 'titan_boss') {
-          updateBossHUD(this);
-          if (dist > 95) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
-          if (this.attackCooldown <= 0) {
-            const pattern = Math.floor(Math.random() * 3);
-            if (pattern === 0) this.startTelegraph('boss_scythe', 0.7, 180);
-            else if (pattern === 1) this.startTelegraph('boss_barrage', 0.6, 400);
-            else this.startTelegraph('boss_timestop', 0.8, 300);
           }
         } else {
           if (dist > 60) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
@@ -2091,31 +2128,121 @@ html_template = """<!DOCTYPE html>
 
       executeAttack() {
         this.animRow = 0;
-        this.attackCooldown = 1.8 + Math.random() * 1.2;
+        this.attackCooldown = (this.isBoss || this.isMiniBoss ? 1.4 : 1.8) + Math.random() * 1.0;
         const distToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
 
-        if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
+        // --- MINI-BOSS EXECUTIONS ---
+        if (this.telegraphType === 'boss_axe_cleave') {
+          sound.playSlash();
+          createScreenShake(12);
+          if (distToPlayer <= this.telegraphParam + player.radius) player.takeDamage(65);
+          for (let i = -2; i <= 2; i++) {
+            const a = this.telegraphAngle + i * 0.25;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*340, Math.sin(a)*340, 32, 'whirling_blade', this));
+          }
+        } else if (this.telegraphType === 'boss_leap_slam') {
+          sound.playExplosion();
+          createScreenShake(16);
+          this.x = this.telegraphTarget.x;
+          this.y = this.telegraphTarget.y;
+          if (Math.hypot(player.x - this.x, player.y - this.y) <= 150) player.takeDamage(75);
+          gameState.particles.push(new Shockwave(this.x, this.y, 220, '#f59e0b'));
+        } else if (this.telegraphType === 'hydra_barrage') {
+          sound.playCast();
+          for (let i = -3; i <= 3; i++) {
+            const a = this.telegraphAngle + i * 0.2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*320, Math.sin(a)*320, 38, 'bouncing_acid', this));
+          }
+        } else if (this.telegraphType === 'hydra_slam') {
+          sound.playExplosion();
+          createScreenShake(14);
+          if (distToPlayer < 200) player.takeDamage(60);
+          gameState.particles.push(new Shockwave(this.x, this.y, 200, '#10b981'));
+        } else if (this.telegraphType === 'hecate_moon_beams') {
+          sound.playLightning();
+          createScreenShake(12);
+          for (let i = 0; i < 12; i++) {
+            const a = (i / 12) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*280, Math.sin(a)*280, 42, 'frost_shard', this));
+          }
+        } else if (this.telegraphType === 'hecate_polymorph') {
+          sound.playCast();
+          gameState.particles.push(new Shockwave(this.x, this.y, 240, '#8b5cf6'));
+          if (distToPlayer < 240) {
+            player.takeDamage(45);
+            player.iFrames = 0.2;
+          }
+        } else if (this.telegraphType === 'cerberus_magma_breath') {
+          sound.playExplosion();
+          for (let i = -3; i <= 3; i++) {
+            const a = this.telegraphAngle + i * 0.22;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*360, Math.sin(a)*360, 48, 'magma_ball', this));
+          }
+        } else if (this.telegraphType === 'cerberus_pounce') {
+          sound.playExplosion();
+          createScreenShake(18);
+          this.x = this.telegraphTarget.x;
+          this.y = this.telegraphTarget.y;
+          if (Math.hypot(player.x - this.x, player.y - this.y) <= 160) player.takeDamage(80);
+          gameState.particles.push(new AnimatedFireExplosion(this.x, this.y, 200));
+        }
+        // --- 20X CHRONOS EXECUTIONS ---
+        else if (this.telegraphType === 'boss_scythe') {
+          sound.playSlash();
+          createScreenShake(18);
+          if (distToPlayer < 200) player.takeDamage(85);
+          for (let i = 0; i < 16; i++) {
+            const a = (i / 16) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*320, Math.sin(a)*320, 44, 'time_shard', this));
+          }
+        } else if (this.telegraphType === 'boss_barrage') {
+          sound.playCast();
+          for (let i = 0; i < 20; i++) {
+            const a = (i / 20) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*340, Math.sin(a)*340, 40, 'time_shard', this));
+          }
+        } else if (this.telegraphType === 'boss_timestop') {
+          sound.playCast();
+          createScreenShake(20);
+          gameState.particles.push(new Shockwave(this.x, this.y, 600, '#eab308'));
+          player.takeDamage(45);
+        } else if (this.telegraphType === 'chronos_orbital_lasers') {
+          sound.playLightning();
+          for (let i = 0; i < 24; i++) {
+            const a = (i / 24) * Math.PI * 2;
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*380, Math.sin(a)*380, 48, 'time_shard', this));
+          }
+        } else if (this.telegraphType === 'chronos_blitz') {
+          sound.playSlash();
+          createScreenShake(20);
+          this.x = player.x - Math.cos(player.angle) * 80;
+          this.y = player.y - Math.sin(player.angle) * 80;
+          if (Math.hypot(player.x - this.x, player.y - this.y) < 140) player.takeDamage(90);
+          gameState.particles.push(new Shockwave(this.x, this.y, 180, '#facc15'));
+        }
+        // --- STANDARD ATTACK EXECUTIONS ---
+        else if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
           sound.playSlash();
           createScreenShake(6);
           if (distToPlayer <= this.telegraphParam + player.radius) {
-            player.takeDamage(this.behavior === 'kamikaze_bomber' ? 45 : 22);
+            player.takeDamage(this.behavior === 'kamikaze_bomber' ? 70 : 44);
           }
           if (this.behavior === 'kamikaze_bomber') {
-            this.takeDamage(999);
+            this.takeDamage(9999);
             gameState.particles.push(new AnimatedFireExplosion(this.x, this.y, 140));
           }
         } else if (this.telegraphType === 'line') {
           sound.playCast();
           for (let i = -1; i <= 1; i++) {
             const a = this.telegraphAngle + i * 0.2;
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*280, Math.sin(a)*280, 24, 'witch_orb', this));
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*280, Math.sin(a)*280, 40, 'witch_orb', this));
           }
         } else if (this.telegraphType === 'fan') {
           sound.playCast();
           const projType = (this.behavior === 'triple_fireball' || this.behavior === 'magma_dropper') ? 'magma_ball' : (this.behavior === 'bouncing_acid_triad' ? 'bouncing_acid' : 'poison_dart');
           for (let i = -2; i <= 2; i++) {
             const a = this.telegraphAngle + i * 0.18;
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*320, Math.sin(a)*320, 20, projType, this));
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*320, Math.sin(a)*320, 36, projType, this));
           }
         } else if (this.telegraphType === 'mortar') {
           sound.playExplosion();
@@ -2123,7 +2250,7 @@ html_template = """<!DOCTYPE html>
           setTimeout(() => {
             sound.playExplosion();
             createScreenShake(10);
-            if (Math.hypot(player.x - target.x, player.y - target.y) <= 80) player.takeDamage(34);
+            if (Math.hypot(player.x - target.x, player.y - target.y) <= 80) player.takeDamage(60);
             gameState.particles.push(new AnimatedFireExplosion(target.x, target.y, 130));
           }, 400);
         } else if (this.telegraphType === 'ring') {
@@ -2131,14 +2258,14 @@ html_template = """<!DOCTYPE html>
           createScreenShake(8);
           for (let i = 0; i < 8; i++) {
             const a = (i / 8) * Math.PI * 2;
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*240, Math.sin(a)*240, 20, 'frost_shard', this));
+            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*240, Math.sin(a)*240, 38, 'frost_shard', this));
           }
         } else if (this.telegraphType === 'rush') {
           sound.playSlash();
           const rushDist = 380;
           this.x += Math.cos(this.telegraphAngle) * rushDist;
           this.y += Math.sin(this.telegraphAngle) * rushDist;
-          if (Math.hypot(player.x - this.x, player.y - this.y) < 70) player.takeDamage(38);
+          if (Math.hypot(player.x - this.x, player.y - this.y) < 70) player.takeDamage(65);
           createScreenShake(12);
         } else if (this.telegraphType === 'eruption') {
           this.isBurrowed = false;
@@ -2146,26 +2273,8 @@ html_template = """<!DOCTYPE html>
           this.y = this.telegraphTarget.y;
           sound.playExplosion();
           createScreenShake(10);
-          if (Math.hypot(player.x - this.x, player.y - this.y) < 80) player.takeDamage(35);
+          if (Math.hypot(player.x - this.x, player.y - this.y) < 80) player.takeDamage(60);
           gameState.particles.push(new Shockwave(this.x, this.y, 110, '#9333ea'));
-        } else if (this.telegraphType === 'boss_scythe') {
-          sound.playSlash();
-          createScreenShake(14);
-          if (distToPlayer < 180) player.takeDamage(42);
-          for (let i = 0; i < 10; i++) {
-            const a = (i / 10) * Math.PI * 2;
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*280, Math.sin(a)*280, 26, 'time_shard', this));
-          }
-        } else if (this.telegraphType === 'boss_barrage') {
-          sound.playCast();
-          for (let i = 0; i < 14; i++) {
-            const a = (i / 14) * Math.PI * 2;
-            gameState.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*300, Math.sin(a)*300, 24, 'time_shard', this));
-          }
-        } else if (this.telegraphType === 'boss_timestop') {
-          sound.playCast();
-          gameState.particles.push(new Shockwave(this.x, this.y, 500, '#eab308'));
-          player.takeDamage(20);
         }
       }
 
@@ -2228,17 +2337,21 @@ html_template = """<!DOCTYPE html>
             gameState.particles.push(new AnimatedFireExplosion(this.x, this.y, 220));
           }
 
-          const obols = Math.floor(Math.random() * 6) + 4;
+          const obols = (this.isBoss ? 200 : (this.isMiniBoss ? 80 : Math.floor(Math.random() * 6) + 4));
+          const ashes = (this.isBoss ? 50 : (this.isMiniBoss ? 20 : 2));
           gameState.gold += obols;
-          gameState.ashes += 2;
+          gameState.ashes += ashes;
           sound.playGold();
           updateHUD();
 
           gameState.particles.push(new Shockwave(this.x, this.y, this.radius * 2.2, this.color));
 
-          if (this.typeKey === 'chronos') {
+          if (this.isBoss) {
             document.getElementById('boss-hud').style.display = 'none';
             handleGameOver(true);
+          } else if (this.isMiniBoss) {
+            document.getElementById('boss-hud').style.display = 'none';
+            onChamberCleared();
           } else if (gameState.enemies.length === 0) {
             onChamberCleared();
           }
@@ -2254,7 +2367,7 @@ html_template = """<!DOCTYPE html>
         if (this.isTelegraphing) {
           const progress = 1 - (this.telegraphTimer / this.telegraphMax);
           ctx.save();
-          if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
+          if (this.telegraphType === 'circle' || this.telegraphType === 'slam' || this.telegraphType === 'boss_axe_cleave' || this.telegraphType === 'hydra_slam' || this.telegraphType === 'cerberus_pounce') {
             ctx.beginPath();
             ctx.arc(0, 0, this.telegraphParam * progress, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
@@ -2262,20 +2375,20 @@ html_template = """<!DOCTYPE html>
             ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
             ctx.lineWidth = 2.5;
             ctx.stroke();
-          } else if (this.telegraphType === 'line' || this.telegraphType === 'rush') {
+          } else if (this.telegraphType === 'line' || this.telegraphType === 'rush' || this.telegraphType === 'chronos_blitz') {
             ctx.rotate(this.telegraphAngle);
             ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.lineTo(this.telegraphParam, 0);
             ctx.stroke();
-          } else if (this.telegraphType === 'fan') {
+          } else if (this.telegraphType === 'fan' || this.telegraphType === 'hydra_barrage' || this.telegraphType === 'cerberus_magma_breath') {
             ctx.rotate(this.telegraphAngle);
-            ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.arc(0, 0, this.telegraphParam, -0.4, 0.4);
+            ctx.arc(0, 0, this.telegraphParam, -0.45, 0.45);
             ctx.closePath();
             ctx.fill();
           }
@@ -2294,13 +2407,13 @@ html_template = """<!DOCTYPE html>
         ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
         ctx.fill();
 
-        // Sprite Rendering (Specific Sheet & Coordinates)
+        // Sprite Rendering
         const img = loadedImages[this.sheet];
         if (img && img.complete) {
           const cellW = img.width / this.cols;
           const cellH = img.height / this.rows;
-          let sx = (this.sheet === 'monsters_beasts' || this.sheet === 'undead_cultists') ? (this.cellX * cellW) : (this.animFrame * cellW);
-          let sy = (this.sheet === 'monsters_beasts' || this.sheet === 'undead_cultists') ? (this.cellY * cellH) : (this.animRow * cellH);
+          let sx = (this.sheet === 'monsters_beasts' || this.sheet === 'undead_cultists' || this.sheet === 'minibosses') ? (this.cellX * cellW) : (this.animFrame * cellW);
+          let sy = (this.sheet === 'monsters_beasts' || this.sheet === 'undead_cultists' || this.sheet === 'minibosses') ? (this.cellY * cellH) : (this.animRow * cellH);
 
           const facingLeft = Math.cos(this.angle) < 0;
           if (facingLeft) ctx.scale(-1, 1);
@@ -2309,8 +2422,8 @@ html_template = """<!DOCTYPE html>
           ctx.drawImage(img, sx, sy, cellW, cellH, -drawSize/2, -drawSize/2, drawSize, drawSize);
         }
 
-        // Overhead health bar & Type Name
-        if (this.typeKey !== 'chronos') {
+        // Overhead health bar & Type Name (non-bosses)
+        if (!this.isBoss && !this.isMiniBoss) {
           const barW = Math.max(46, this.radius * 1.8);
           const barH = 6;
           ctx.fillStyle = '#000';
@@ -2328,7 +2441,7 @@ html_template = """<!DOCTYPE html>
       }
     }
 
-    // --- PROJECTILE CLASS (Renders from new_projectiles.webp & clean_fx.webp) ---
+    // --- PROJECTILE CLASS ---
     class Projectile {
       constructor(x, y, vx, vy, damage, type, owner) {
         this.x = x;
@@ -2845,7 +2958,7 @@ html_template = """<!DOCTYPE html>
       }
     }
 
-    // --- CHAMBER PROGRESSION & PROCEDURAL ENEMY GENERATOR ---
+    // --- 100-CHAMBER PROGRESSION SYSTEM (Mini-bosses at 20, 40, 60, 80; Final Boss at 100) ---
     function startChamber(chamberIndex) {
       gameState.chamber = chamberIndex;
       gameState.enemiesCleared = false;
@@ -2857,28 +2970,69 @@ html_template = """<!DOCTYPE html>
 
       const titleEl = document.getElementById('chamber-name');
       const subEl = document.getElementById('chamber-sub');
+      const bossHud = document.getElementById('boss-hud');
 
-      if (chamberIndex === 5) {
+      // 1. FINAL BOSS (Chamber 100)
+      if (chamberIndex === 100) {
         gameState.chamberType = 'boss';
-        titleEl.innerText = 'HOUSE OF CHRONOS — BOSS CHAMBER';
-        subEl.innerText = 'The Titan of Time';
-        document.getElementById('boss-hud').style.display = 'flex';
+        titleEl.innerText = 'HOUSE OF CHRONOS — FINAL BATTLE (CHAMBER 100)';
+        subEl.innerText = 'Chronos — The Master of Time (20x Strength)';
+        bossHud.style.display = 'flex';
         gameState.enemies = [new Enemy(0, -180, 'chronos')];
-      } else if (chamberIndex === 4) {
+      }
+      // 2. MINI-BOSSES (Chambers 20, 40, 60, 80)
+      else if (chamberIndex === 20) {
+        gameState.chamberType = 'miniboss';
+        titleEl.innerText = 'EREBUS GATEWAY — MINI-BOSS (CHAMBER 20)';
+        subEl.innerText = 'Asterius — The Minotaur King';
+        bossHud.style.display = 'flex';
+        gameState.enemies = [new Enemy(0, -180, 'asterius_king')];
+      } else if (chamberIndex === 40) {
+        gameState.chamberType = 'miniboss';
+        titleEl.innerText = 'ASPHODEL MAGMA REACH — MINI-BOSS (CHAMBER 40)';
+        subEl.innerText = 'Lernaean Bone Hydra Prime';
+        bossHud.style.display = 'flex';
+        gameState.enemies = [new Enemy(0, -180, 'hydra_prime')];
+      } else if (chamberIndex === 60) {
+        gameState.chamberType = 'miniboss';
+        titleEl.innerText = 'ELYSIUM MOON SANCTUM — MINI-BOSS (CHAMBER 60)';
+        subEl.innerText = 'Hecate — Matron of Witchcraft';
+        bossHud.style.display = 'flex';
+        gameState.enemies = [new Enemy(0, -180, 'hecate_matron')];
+      } else if (chamberIndex === 80) {
+        gameState.chamberType = 'miniboss';
+        titleEl.innerText = 'TEMPLE OF STYX — MINI-BOSS (CHAMBER 80)';
+        subEl.innerText = 'Cerberus Prime — Infernal Guardian';
+        bossHud.style.display = 'flex';
+        gameState.enemies = [new Enemy(0, -180, 'cerberus_prime')];
+      }
+      // 3. SHOPS / SAFE HAVENS (Chambers 10, 30, 50, 70, 90)
+      else if (chamberIndex % 20 === 10) {
         gameState.chamberType = 'shop';
-        titleEl.innerText = 'CHARON’S CROSSING — SHOP';
-        subEl.innerText = 'Safe Haven';
+        titleEl.innerText = `CHARON’S SAFE HAVEN — CHAMBER ${chamberIndex} / 100`;
+        subEl.innerText = 'Replenish & Seek Divine Blessings';
         gameState.enemies = [];
         gameState.enemiesCleared = true;
         arena.door.isOpen = true;
+        bossHud.style.display = 'none';
         showBoonSelection('selene');
-      } else {
+      }
+      // 4. STANDARD HARDCORE COMBAT CHAMBERS
+      else {
         gameState.chamberType = 'normal';
-        titleEl.innerText = `EREBUS — CHAMBER ${chamberIndex}`;
-        subEl.innerText = 'Underworld Depths';
+        bossHud.style.display = 'none';
 
-        const count = 4 + chamberIndex * 2;
-        const availableKeys = Object.keys(ENEMY_TYPES).filter(k => k !== 'chronos');
+        let biomeName = 'EREBUS DEPTHS';
+        if (chamberIndex > 80) biomeName = 'HOUSE OF CHRONOS GATEWAY';
+        else if (chamberIndex > 60) biomeName = 'TEMPLE OF STYX';
+        else if (chamberIndex > 40) biomeName = 'ELYSIUM GLADES';
+        else if (chamberIndex > 20) biomeName = 'ASPHODEL MAGMA SEAS';
+
+        titleEl.innerText = `${biomeName} — CHAMBER ${chamberIndex} / 100`;
+        subEl.innerText = 'Underworld Depths (Enemies 2x Strength)';
+
+        const count = 4 + Math.min(10, Math.floor(chamberIndex / 10) * 2);
+        const availableKeys = Object.keys(ENEMY_TYPES).filter(k => !ENEMY_TYPES[k].isBoss && !ENEMY_TYPES[k].isMiniBoss);
         gameState.enemies = [];
 
         for (let i = 0; i < count; i++) {
@@ -2984,11 +3138,11 @@ html_template = """<!DOCTYPE html>
       if (isVictory) {
         title.innerText = 'VICTORY ACHIEVED!';
         title.style.color = '#fde047';
-        sub.innerText = 'Chronos has been vanquished. The Underworld is reclaimed!';
+        sub.innerText = 'Chronos has been vanquished at Chamber 100. The Underworld is reclaimed!';
       } else {
         title.innerText = 'THERE IS NO ESCAPE';
         title.style.color = '#ef4444';
-        sub.innerText = 'Melinoë falls in battle. Return to the Altar of Ashes to grow stronger.';
+        sub.innerText = `Melinoë falls in Chamber ${gameState.chamber}. Return to the Altar of Ashes to grow stronger.`;
       }
 
       document.getElementById('stats-chambers').innerText = gameState.chamber;
@@ -3082,6 +3236,7 @@ html_template = """<!DOCTYPE html>
     }
 
     function updateBossHUD(boss) {
+      document.getElementById('boss-name-text').innerText = boss.name;
       const hpPct = Math.max(0, (boss.hp / boss.maxHp) * 100);
       document.getElementById('boss-hp-bar').style.width = `${hpPct}%`;
     }
@@ -3253,4 +3408,4 @@ final_html = html_template.replace('%ASSETS_JSON%', json.dumps(b64_data))
 with open('index.html', 'w', encoding='utf-8') as f:
     f.write(final_html)
 
-print(f"Successfully compiled Complete Edition index.html ({len(final_html)} bytes)!")
+print(f"Successfully compiled 100 Chambers Hardcore Edition index.html ({len(final_html)} bytes)!")
