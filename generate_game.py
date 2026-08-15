@@ -8,7 +8,7 @@ assets_keys = [
     'consistent_tiles', 'seamless_floor', 'props', 'ui',
     'clean_fx', 'attack_fx_anim',
     'all_10_gods', 'monsters_beasts', 'undead_cultists', 'new_projectiles',
-    'minibosses'
+    'minibosses', 'reward_icons'
 ]
 
 b64_data = {}
@@ -249,6 +249,16 @@ html_template = """<!DOCTYPE html>
       color: #fff;
     }
 
+    .boon-lvl-badge {
+      background: #7c3aed;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
     /* Bottom HUD */
     .bottom-hud {
       display: flex;
@@ -427,7 +437,7 @@ html_template = """<!DOCTYPE html>
       font-style: italic;
     }
 
-    /* Boon Selection Cards Grid */
+    /* Cards Grid */
     .boon-cards-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -665,8 +675,8 @@ html_template = """<!DOCTYPE html>
       <!-- Controls helper -->
       <div class="controls-banner">
         <span><span class="key-badge">WASD</span> Move</span>
-        <span><span class="key-badge">L-CLICK / J</span> Strike</span>
-        <span><span class="key-badge">R-CLICK / K</span> Special (Nerfed -80%)</span>
+        <span><span class="key-badge">L-CLICK / J</span> Strike (Hitbox Matched)</span>
+        <span><span class="key-badge">R-CLICK / K</span> Special (Single-Hit)</span>
         <span><span class="key-badge">Q / E</span> Cast</span>
         <span><span class="key-badge">SPACE / SHIFT</span> Dash</span>
         <span><span class="key-badge">F</span> Hex</span>
@@ -733,6 +743,31 @@ html_template = """<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- Pom of Power Modal (Pomegranate Level Up) -->
+    <div id="pom-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div style="display:flex; justify-content:center; margin-bottom:12px;">
+          <canvas id="pom-portrait-canvas" class="dialogue-portrait-canvas" width="120" height="120"></canvas>
+        </div>
+        <div class="modal-title">POM OF POWER</div>
+        <div class="modal-subtitle">Enhance the potency of one of your existing divine blessings (+40% Power per Lv)</div>
+        <div id="pom-choices-container" class="boon-cards-grid"></div>
+      </div>
+    </div>
+
+    <!-- Charon's Shop Modal -->
+    <div id="shop-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div style="display:flex; justify-content:center; margin-bottom:12px;">
+          <canvas id="shop-portrait-canvas" class="dialogue-portrait-canvas" width="120" height="120"></canvas>
+        </div>
+        <div class="modal-title">CHARON'S OBOLEUM VAULT</div>
+        <div class="modal-subtitle">"Hrrrnnnn... (Purchase sacred goods with your collected Gold Obols)"</div>
+        <div id="shop-choices-container" class="boon-cards-grid"></div>
+        <button id="leave-shop-btn" class="hades-btn" style="margin-top:20px;">PROCEED TO NEXT CHAMBER ➔</button>
+      </div>
+    </div>
+
     <!-- Altar of Ashes -->
     <div id="altar-modal" class="modal-overlay">
       <div class="modal-card">
@@ -760,7 +795,7 @@ html_template = """<!DOCTYPE html>
 
   <script>
     /* ==========================================================================
-       HADES 2 ENGINE: 100 CHAMBERS, 4 MINIBOSSES, 20X CHRONOS, NERFED SPECIAL
+       HADES 2 COMPLETE ENGINE: 100 CHAMBERS, MULTIPLE GATES, POMS, SHOPS, 100+ BOONS
        ========================================================================== */
 
     const ASSETS_DATA = %ASSETS_JSON%;
@@ -1072,7 +1107,7 @@ html_template = """<!DOCTYPE html>
 
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // --- 10 OLYMPIAN & CHTHONIC GODS REGISTRY & DUO BOONS ---
+    // --- 10 OLYMPIAN & CHTHONIC GODS REGISTRY (10+ BOONS EACH = 100+ BOONS) ---
     const GODS = {
       zeus: {
         name: 'Zeus',
@@ -1087,7 +1122,13 @@ html_template = """<!DOCTYPE html>
           { id: 'zeus_strike', name: 'Lightning Strike', slot: 'Attack', desc: 'Attacks call down chain lightning arcing between up to 5 enemies for 45 damage.' },
           { id: 'zeus_ring', name: 'Storm Ring', slot: 'Cast', desc: 'Your Cast circle triggers repeating lightning strikes every 0.4s for 40 damage.' },
           { id: 'zeus_dash', name: 'Static Dash', slot: 'Dash', desc: 'Dashing discharges a burst of 6 electric spark bolts.' },
-          { id: 'zeus_special', name: 'Thunder Special', slot: 'Special', desc: 'Special sickle calls down a thunderbolt upon every enemy struck.' }
+          { id: 'zeus_special', name: 'Thunder Special', slot: 'Special', desc: 'Special sickle calls down a thunderbolt upon every enemy struck.' },
+          { id: 'zeus_cloud', name: 'High Voltage', slot: 'Passive', desc: 'Chain lightning jumps +3 extra times and has +40% wider arc distance.' },
+          { id: 'zeus_jolt', name: 'Static Shock', slot: 'Passive', desc: 'Inflicts Jolted on foes; when they attack, they take 120 self-inflicted electric damage.' },
+          { id: 'zeus_bolt', name: 'Heaven’s Vengeance', slot: 'Passive', desc: 'Whenever you take damage, immediately strike the attacker with 150 lightning.' },
+          { id: 'zeus_conduit', name: 'Storm Conduit', slot: 'Passive', desc: 'All lightning effects have +30% chance to critically strike for 2.5x damage.' },
+          { id: 'zeus_fury', name: 'God’s Wrath', slot: 'Passive', desc: 'Gain +25% overall attack speed and +25% lightning strike frequency.' },
+          { id: 'zeus_overload', name: 'Electric Overload', slot: 'Passive', desc: 'Foes struck by lightning emit secondary shockwaves dealing 40 area damage.' }
         ]
       },
       hestia: {
@@ -1103,7 +1144,13 @@ html_template = """<!DOCTYPE html>
           { id: 'hestia_strike', name: 'Flame Strike', slot: 'Attack', desc: 'Attacks inflict Scorch, dealing 80 burn damage over 3 seconds.' },
           { id: 'hestia_ring', name: 'Smolder Ring', slot: 'Cast', desc: 'Your Cast circle ignites a continuous fire vortex that incinerates foes for 120 dmg.' },
           { id: 'hestia_dash', name: 'Searing Dash', slot: 'Dash', desc: 'Dash leaves a flaming path that burns enemies who step into it.' },
-          { id: 'hestia_special', name: 'Magma Special', slot: 'Special', desc: 'Special sickle leaves a trail of burning magma on its path.' }
+          { id: 'hestia_special', name: 'Magma Special', slot: 'Special', desc: 'Special sickle leaves a trail of burning magma on its path.' },
+          { id: 'hestia_pyro', name: 'Pyroclast', slot: 'Passive', desc: 'Scorch burn ticks +60% faster and spreads to nearby adjacent foes.' },
+          { id: 'hestia_combust', name: 'Controlled Burn', slot: 'Passive', desc: 'Striking scorched foes triggers a fiery combustion dealing 70 instant damage.' },
+          { id: 'hestia_ash', name: 'Hearth Blessing', slot: 'Passive', desc: 'Gain 25% damage resistance while standing inside fire trails or cast rings.' },
+          { id: 'hestia_inferno', name: 'Raging Inferno', slot: 'Passive', desc: 'Foes suffering Scorch take +40% bonus damage from all player attacks.' },
+          { id: 'hestia_ember', name: 'Firebrand', slot: 'Passive', desc: 'Your Special launches 3 bouncing fire embers alongside the sickle.' },
+          { id: 'hestia_flare', name: 'Solar Flare', slot: 'Passive', desc: 'Hex activations leave a lasting 5s blazing firestorm dealing 250 total dmg.' }
         ]
       },
       poseidon: {
@@ -1119,7 +1166,13 @@ html_template = """<!DOCTYPE html>
           { id: 'poseidon_strike', name: 'Wave Strike', slot: 'Attack', desc: 'Attacks blast enemies backward with heavy waves. Slashing foes into walls deals 110 wall-slam bonus damage!' },
           { id: 'poseidon_ring', name: 'Flood Ring', slot: 'Cast', desc: 'Your Cast circle erupts into a violent geyser, knocking all snared foes outward.' },
           { id: 'poseidon_dash', name: 'Tidal Dash', slot: 'Dash', desc: 'Dash unleashes a surging wave that propels you and slams enemies.' },
-          { id: 'poseidon_special', name: 'Tsunami Special', slot: 'Special', desc: 'Special sickle creates a wide wave pushing back all enemies in front.' }
+          { id: 'poseidon_special', name: 'Tsunami Special', slot: 'Special', desc: 'Special sickle creates a wide wave pushing back all enemies in front.' },
+          { id: 'poseidon_crush', name: 'Heavy Surf', slot: 'Passive', desc: 'Wall slam damage increased by +90% and stuns enemies for 1.2s.' },
+          { id: 'poseidon_rip', name: 'Riptide', slot: 'Passive', desc: 'Wave attacks create whirlpools pulling foes inward toward the center.' },
+          { id: 'poseidon_ocean', name: 'Ocean’s Bounty', slot: 'Passive', desc: 'Enemies drop +60% more Gold Obols and Ashes upon defeat.' },
+          { id: 'poseidon_typhoon', name: 'Typhoon Force', slot: 'Passive', desc: 'Surge waves pierce enemy shields and destroy incoming hostile projectiles.' },
+          { id: 'poseidon_undertow', name: 'Undertow', slot: 'Passive', desc: 'Dashing directly into enemies slams them backwards for 80 water damage.' },
+          { id: 'poseidon_surge', name: 'Tidal Surge', slot: 'Passive', desc: 'Gain +40% movement speed for 3s after launching your Special sickle.' }
         ]
       },
       apollo: {
@@ -1132,10 +1185,16 @@ html_template = """<!DOCTYPE html>
           '"Strike with solar brilliance and dazzle all who oppose your destiny."'
         ],
         boons: [
-          { id: 'apollo_strike', name: 'Nova Strike', slot: 'Attack', desc: 'Attacks have +50% wider sweep radius and inflict Dazzle (enemies miss attacks).' },
+          { id: 'apollo_strike', name: 'Nova Strike', slot: 'Attack', desc: 'Attacks have +50% wider sweep radius and inflict Dazzle (foes miss attacks).' },
           { id: 'apollo_ring', name: 'Solar Ring', slot: 'Cast', desc: 'Your Cast circle expands by +50% and triggers blinding solar flares.' },
           { id: 'apollo_special', name: 'Sunburst Special', slot: 'Special', desc: 'Special sickle creates a blinding explosion at the apex of its throw.' },
-          { id: 'apollo_dash', name: 'Blinding Dash', slot: 'Dash', desc: 'Dashing blinds nearby foes for 2.5s.' }
+          { id: 'apollo_dash', name: 'Blinding Dash', slot: 'Dash', desc: 'Dashing blinds nearby foes for 2.5s.' },
+          { id: 'apollo_radiance', name: 'Solar Radiance', slot: 'Passive', desc: 'Dazzled and blinded foes take +45% bonus damage from all sources.' },
+          { id: 'apollo_dawn', name: 'Breaking Dawn', slot: 'Passive', desc: 'Striking blinded foes triggers an instant 90 damage light burst.' },
+          { id: 'apollo_hymn', name: 'Divine Hymn', slot: 'Passive', desc: 'Defeating enemies heals Melinoë for 5 HP (up to 30 HP per chamber).' },
+          { id: 'apollo_splendor', name: 'High Splendor', slot: 'Passive', desc: 'All sword attacks release radiant sun sparks seeking out targets.' },
+          { id: 'apollo_sunfire', name: 'Sunfire Aegis', slot: 'Passive', desc: 'Gain a 25% passive evasion chance while standing inside light circles.' },
+          { id: 'apollo_clarity', name: 'Lucid Mind', slot: 'Passive', desc: 'Magick regenerates +100% faster (14 Magick per second).' }
         ]
       },
       selene: {
@@ -1151,7 +1210,13 @@ html_template = """<!DOCTYPE html>
           { id: 'selene_hex_ray', name: 'Lunar Ray', slot: 'Hex', desc: 'Fires a continuous devastating moonlight laser beam dealing 550 total damage!' },
           { id: 'selene_hex_slow', name: 'Phase Shift', slot: 'Hex', desc: 'Slows down time for all enemies by 85% for 4.5 seconds.' },
           { id: 'selene_hex_meteor', name: 'Total Eclipse', slot: 'Hex', desc: 'Calls down a colossal lunar meteor after 1s, dealing 750 area damage.' },
-          { id: 'selene_dash', name: 'Moon Cloak', slot: 'Dash', desc: 'Dashing grants invisibility and +50% critical strike chance on next hit.' }
+          { id: 'selene_dash', name: 'Moon Cloak', slot: 'Dash', desc: 'Dashing grants invisibility and +50% critical strike chance on next hit.' },
+          { id: 'selene_crescent', name: 'Silver Crescent', slot: 'Passive', desc: 'Your Special sickle fires 2 crescent blades in a spread.' },
+          { id: 'selene_orbit', name: 'Orbital Moon', slot: 'Passive', desc: 'A lunar orb orbits Melinoë dealing 40 contact damage and blocking bullets.' },
+          { id: 'selene_gravity', name: 'Lunar Gravity', slot: 'Passive', desc: 'Your Cast circle draws in enemy projectiles and neutralizes them.' },
+          { id: 'selene_shroud', name: 'Witch Shroud', slot: 'Passive', desc: 'Dashing through enemy attacks generates +20 Hex Charge instantly.' },
+          { id: 'selene_waxing', name: 'Waxing Crescent', slot: 'Passive', desc: 'Hex charge gains +40% faster on all basic attacks and specials.' },
+          { id: 'selene_fullmoon', name: 'Full Moon Might', slot: 'Passive', desc: 'While your Hex gauge is 100% full, all attacks deal +50% bonus damage.' }
         ]
       },
       hermes: {
@@ -1166,7 +1231,14 @@ html_template = """<!DOCTYPE html>
         boons: [
           { id: 'hermes_speed', name: 'Nimble Mind', slot: 'Passive', desc: 'Attack and Special speed increased by +45%.' },
           { id: 'hermes_dash', name: 'Hyper Sprint', slot: 'Dash', desc: 'Gain +2 Dash charges and +60% movement speed for 2s after dashing.' },
-          { id: 'hermes_dodge', name: 'Greater Evasion', slot: 'Passive', desc: 'Gain a flat 30% chance to completely dodge any incoming attack.' }
+          { id: 'hermes_dodge', name: 'Greater Evasion', slot: 'Passive', desc: 'Gain a flat 30% chance to completely dodge any incoming attack.' },
+          { id: 'hermes_haste', name: 'Quick Strike', slot: 'Passive', desc: 'Attack combo recovery time reduced to virtually zero.' },
+          { id: 'hermes_gust', name: 'Gale Force', slot: 'Passive', desc: 'Dashing creates a shockwave blowing away enemy bullets.' },
+          { id: 'hermes_rush', name: 'Adrenaline Rush', slot: 'Passive', desc: 'Moving above base speed grants +35% damage to your next strike.' },
+          { id: 'hermes_delivery', name: 'Swift Delivery', slot: 'Passive', desc: 'You deal bonus damage equal to 40% of your total movement speed.' },
+          { id: 'hermes_reflex', name: 'Lightning Reflexes', slot: 'Passive', desc: 'Dodging an attack discharges an instant 100 electric shock to nearby foes.' },
+          { id: 'hermes_stride', name: 'Fleet Stride', slot: 'Passive', desc: 'Permanently increases base movement speed by +45%.' },
+          { id: 'hermes_wings', name: 'Winged Talaria', slot: 'Passive', desc: 'Dashing lets you glide smoothly over traps and magma hazards.' }
         ]
       },
       aphrodite: {
@@ -1181,7 +1253,14 @@ html_template = """<!DOCTYPE html>
         boons: [
           { id: 'aphrodite_strike', name: 'Heartbreak Strike', slot: 'Attack', desc: 'Attacks deal +60% damage and inflict Weak, reducing enemy attack power by 35%.' },
           { id: 'aphrodite_dash', name: 'Passion Dash', slot: 'Dash', desc: 'Dashing releases a burst of charm petals that weaken nearby foes.' },
-          { id: 'aphrodite_ring', name: 'Sweet Surrender', slot: 'Cast', desc: 'Cast circle causes snared enemies to take +50% bonus damage from all sources.' }
+          { id: 'aphrodite_ring', name: 'Sweet Surrender', slot: 'Cast', desc: 'Cast circle causes snared enemies to take +50% bonus damage from all sources.' },
+          { id: 'aphrodite_special', name: 'Crush Special', slot: 'Special', desc: 'Special sickle inflicts heavy Weak and slows enemy movement by 40%.' },
+          { id: 'aphrodite_charm', name: 'Captivating Glance', slot: 'Passive', desc: 'Attacks have a 20% chance to Charm foes to fight for you for 4s.' },
+          { id: 'aphrodite_allure', name: 'Fatal Allure', slot: 'Passive', desc: 'Weakened foes suffer +40% critical damage from all your attacks.' },
+          { id: 'aphrodite_grace', name: 'Life Affirmation', slot: 'Passive', desc: 'All maximum health pickups and healing effects are increased by +50%.' },
+          { id: 'aphrodite_heart', name: 'Dying Wish', slot: 'Passive', desc: 'Weakened enemies detonate in a burst of charm petals on death for 120 area damage.' },
+          { id: 'aphrodite_beauty', name: 'Unshakable Glamour', slot: 'Passive', desc: 'Bosses and mini-bosses deal -25% reduced damage to Melinoë.' },
+          { id: 'aphrodite_embrace', name: 'Loving Embrace', slot: 'Passive', desc: 'Standing near enemies restores 2 HP per second (up to 25 HP per room).' }
         ]
       },
       hephaestus: {
@@ -1196,7 +1275,14 @@ html_template = """<!DOCTYPE html>
         boons: [
           { id: 'hephaestus_strike', name: 'Volcanic Strike', slot: 'Attack', desc: 'Every 4s, your next Attack unleashes a colossal volcanic blast for 280 damage.' },
           { id: 'hephaestus_armor', name: 'Heavy Armor', slot: 'Passive', desc: 'Gain +50 Max HP and 25% passive damage resistance.' },
-          { id: 'hephaestus_ring', name: 'Molten Ring', slot: 'Cast', desc: 'Cast circle erupts with a molten crater dealing 180 area damage.' }
+          { id: 'hephaestus_ring', name: 'Molten Ring', slot: 'Cast', desc: 'Cast circle erupts with a molten crater dealing 180 area damage.' },
+          { id: 'hephaestus_special', name: 'Anvil Special', slot: 'Special', desc: 'Special sickle triggers a concussive shockwave for 60 bonus damage.' },
+          { id: 'hephaestus_forge', name: 'Divine Forge', slot: 'Passive', desc: 'Every 3 cleared chambers, gain +15 permanent Max Health.' },
+          { id: 'hephaestus_blast', name: 'Molten Shrapnel', slot: 'Passive', desc: 'Volcanic Strikes fire 8 piercing metal shrapnel shards in all directions.' },
+          { id: 'hephaestus_temper', name: 'Tempered Steel', slot: 'Passive', desc: 'Attacks deal +45% bonus damage to armored foes, mini-bosses, and Titan bosses.' },
+          { id: 'hephaestus_shield', name: 'Iron Aegis', slot: 'Passive', desc: 'Gain a 50 HP energy barrier that completely absorbs hits and recharges each room.' },
+          { id: 'hephaestus_smelt', name: 'Magma Smelting', slot: 'Passive', desc: 'Attack strikes cleave through all targets, ignoring defense shields.' },
+          { id: 'hephaestus_crush', name: 'Seismic Anvil', slot: 'Passive', desc: 'Sickle hits shred armor, making targets take +30% damage from all sources.' }
         ]
       },
       demeter: {
@@ -1211,7 +1297,14 @@ html_template = """<!DOCTYPE html>
         boons: [
           { id: 'demeter_strike', name: 'Frost Strike', slot: 'Attack', desc: 'Attacks inflict Chill, slowing enemy movement and attacks by up to 60%.' },
           { id: 'demeter_ring', name: 'Arctic Ring', slot: 'Cast', desc: 'Cast circle summons a freezing blizzard vortex that continuously chills foes.' },
-          { id: 'demeter_dash', name: 'Glacial Dash', slot: 'Dash', desc: 'Dash leaves freezing icicles that shatter when stepped on for 80 damage.' }
+          { id: 'demeter_dash', name: 'Glacial Dash', slot: 'Dash', desc: 'Dash leaves freezing icicles that shatter when stepped on for 80 damage.' },
+          { id: 'demeter_special', name: 'Freeze Special', slot: 'Special', desc: 'Special sickle freezes enemies solid in ice for 1.5 seconds.' },
+          { id: 'demeter_shatter', name: 'Glacial Shatter', slot: 'Passive', desc: 'Striking chilled or frozen foes deals +50% critical damage.' },
+          { id: 'demeter_hail', name: 'Hailstorm', slot: 'Passive', desc: 'Chilled foes are struck by falling hailstones every 1s for 45 damage.' },
+          { id: 'demeter_blizzard', name: 'Snow Squall', slot: 'Passive', desc: 'Your Cast blizzard expands by +40% and reduces enemy projectile accuracy.' },
+          { id: 'demeter_rime', name: 'Killing Frost', slot: 'Passive', desc: 'Enemies at max Chill stacks decay rapidly for 70 frost damage per second.' },
+          { id: 'demeter_frostbite', name: 'Bitter Cold', slot: 'Passive', desc: 'Foes who hit Melinoë while chilled take 90 reflected frost damage and get frozen.' },
+          { id: 'demeter_winter', name: 'Winter Harvest', slot: 'Passive', desc: 'Chilled foes with under 15% health shatter instantly into ice (execute).' }
         ]
       },
       ares: {
@@ -1226,7 +1319,14 @@ html_template = """<!DOCTYPE html>
         boons: [
           { id: 'ares_strike', name: 'Curse of Agony', slot: 'Attack', desc: 'Attacks inflict Doom, dealing 130 delayed explosive damage after 1.1 seconds.' },
           { id: 'ares_ring', name: 'Blade Rift', slot: 'Cast', desc: 'Cast circle summons a spinning blade rift that tears through enemies for 240 dmg.' },
-          { id: 'ares_passive', name: 'Battle Rage', slot: 'Passive', desc: 'Slaying any enemy grants +50% damage boost for 5 seconds.' }
+          { id: 'ares_passive', name: 'Battle Rage', slot: 'Passive', desc: 'Slaying any enemy grants +50% damage boost for 5 seconds.' },
+          { id: 'ares_special', name: 'Curse of Pain', slot: 'Special', desc: 'Special sickle inflicts 90 delayed Doom on all enemies pierced.' },
+          { id: 'ares_blade_dash', name: 'Blade Dash', slot: 'Dash', desc: 'Dashing leaves behind a miniature whirling blade rift dealing 75 damage.' },
+          { id: 'ares_impending', name: 'Impending Doom', slot: 'Passive', desc: 'Doom takes 0.4s longer to detonate, but its explosive damage is increased by +80%.' },
+          { id: 'ares_engulf', name: 'Engulfing Vortex', slot: 'Passive', desc: 'Blade Rifts pull in nearby foes and grow +40% larger over their duration.' },
+          { id: 'ares_blood', name: 'Blood Frenzy', slot: 'Passive', desc: 'After taking damage, your next 2 attacks deal +100% bonus damage.' },
+          { id: 'ares_grim', name: 'Grim Reaper', slot: 'Passive', desc: 'Slaying a Doom-afflicted foe immediately triggers Doom on all adjacent targets.' },
+          { id: 'ares_carnage', name: 'Carnage Engine', slot: 'Passive', desc: 'Defeating 3 enemies without taking damage grants +30 bonus Gold Obols.' }
         ]
       }
     };
@@ -1298,7 +1398,7 @@ html_template = """<!DOCTYPE html>
       chamberType: 'normal',
       enemiesCleared: false,
       kills: 0,
-      gold: 60,
+      gold: 80,
       ashes: 10,
       bones: 5,
       upgrades: {
@@ -1313,7 +1413,8 @@ html_template = """<!DOCTYPE html>
       enemies: [],
       camera: { x: 0, y: 0 },
       isPaused: false,
-      battleRageTimer: 0
+      battleRageTimer: 0,
+      doors: [] // Array of interactive exit gates
     };
 
     // --- 30+ ENEMY DEFINITIONS (All standard enemies 2x stronger, Mini-bosses & 20x Chronos) ---
@@ -1365,7 +1466,7 @@ html_template = """<!DOCTYPE html>
       chronos: { name: 'Chronos — Titan of Time (Colossal)', isBoss: true, maxHp: 68000, speed: 115, radius: 64, color: '#eab308', sheet: 'chronos', behavior: 'titan_boss_20x' }
     };
 
-    // --- PLAYER CLASS (Special Nerfed by 80%) ---
+    // --- PLAYER CLASS (Hitbox Matched to Visual Sweep & Single-Hit Special) ---
     class Player {
       constructor() {
         this.x = 0;
@@ -1515,10 +1616,14 @@ html_template = """<!DOCTYPE html>
         let baseDmg = 38 + (this.attackCombo === 2 ? 32 : 0);
         baseDmg *= (1 + gameState.upgrades.damage * 0.1);
         if (gameState.battleRageTimer > 0) baseDmg *= 1.5;
-        if (hasBoon('aphrodite_strike')) baseDmg *= 1.6;
+        if (hasBoon('aphrodite_strike')) {
+          const lvl = getBoonLevel('aphrodite_strike');
+          baseDmg *= (1.6 + (lvl - 1) * 0.4);
+        }
 
-        const attackRange = hasBoon('apollo_strike') ? 150 : 105;
-        const attackArc = Math.PI * 0.7;
+        // MATCHED HITBOX RANGE & 180° SWEEP ARC
+        const attackRange = hasBoon('apollo_strike') ? 220 : 160;
+        const attackArc = Math.PI * 1.0; // 180 degrees full cleave
 
         gameState.particles.push(new AnimatedAttackSweep(this.x, this.y, this.angle, attackRange, this.attackCombo));
 
@@ -1546,7 +1651,9 @@ html_template = """<!DOCTYPE html>
 
               if (hasBoon('hephaestus_strike') && this.volcanicReady) {
                 this.volcanicReady = false;
-                enemy.takeDamage(280, 'volcanic');
+                const vLvl = getBoonLevel('hephaestus_strike');
+                const vDmg = 280 * (1 + (vLvl - 1) * 0.4);
+                enemy.takeDamage(vDmg, 'volcanic');
                 sound.playExplosion();
                 createScreenShake(14);
                 gameState.particles.push(new AnimatedFireExplosion(enemy.x, enemy.y, 160));
@@ -1556,7 +1663,8 @@ html_template = """<!DOCTYPE html>
               }
 
               if (hasBoon('ares_strike')) {
-                enemy.applyDoom(130);
+                const aLvl = getBoonLevel('ares_strike');
+                enemy.applyDoom(130 * (1 + (aLvl - 1) * 0.4));
               }
 
               if (hasBoon('demeter_strike')) {
@@ -1564,11 +1672,13 @@ html_template = """<!DOCTYPE html>
               }
 
               if (hasBoon('zeus_strike')) {
-                procChainLightning(enemy, 45);
+                const zLvl = getBoonLevel('zeus_strike');
+                procChainLightning(enemy, 45 * (1 + (zLvl - 1) * 0.4));
               }
 
               if (hasBoon('hestia_strike')) {
-                enemy.applyScorch(80);
+                const hLvl = getBoonLevel('hestia_strike');
+                enemy.applyScorch(80 * (1 + (hLvl - 1) * 0.4));
                 gameState.particles.push(new AnimatedFireExplosion(enemy.x, enemy.y, 70));
               }
 
@@ -1603,8 +1713,8 @@ html_template = """<!DOCTYPE html>
         sound.playSlash();
 
         const spd = 580;
-        // NERFED BY 80%: Base damage 10.4 (down from 52)
-        let specDmg = 10.4 * (1 + gameState.upgrades.damage * 0.1);
+        // SINGLE-HIT & BALANCED SPECIAL DAMAGE
+        let specDmg = 12 * (1 + gameState.upgrades.damage * 0.1);
         if (gameState.battleRageTimer > 0) specDmg *= 1.5;
 
         gameState.projectiles.push(new Projectile(
@@ -1868,7 +1978,7 @@ html_template = """<!DOCTYPE html>
 
     const player = new Player();
 
-    // --- ENEMY CLASS (Supports Mini-Bosses & 20x Chronos) ---
+    // --- ENEMY CLASS ---
     class Enemy {
       constructor(x, y, typeKey) {
         this.x = x;
@@ -1879,7 +1989,6 @@ html_template = """<!DOCTYPE html>
         this.isBoss = conf.isBoss || false;
         this.isMiniBoss = conf.isMiniBoss || false;
 
-        // Scale HP based on Chamber depth
         const depthMult = 1.0 + (gameState.chamber - 1) * 0.025;
         this.maxHp = Math.round(conf.maxHp * (this.isBoss || this.isMiniBoss ? 1.0 : depthMult));
         this.hp = this.maxHp;
@@ -1968,7 +2077,6 @@ html_template = """<!DOCTYPE html>
         const dist = Math.hypot(dx, dy);
         this.angle = Math.atan2(dy, dx);
 
-        // Update Boss / Mini-Boss HUD
         if (this.isBoss || this.isMiniBoss) {
           updateBossHUD(this);
         }
@@ -1984,7 +2092,6 @@ html_template = """<!DOCTYPE html>
 
         if (this.attackCooldown > 0) this.attackCooldown -= effectiveDt;
 
-        // --- MINI-BOSS BEHAVIORS ---
         if (this.behavior === 'miniboss_asterius') {
           if (dist > 95) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
           if (this.attackCooldown <= 0) {
@@ -2017,7 +2124,6 @@ html_template = """<!DOCTYPE html>
             else this.startTelegraph('ring', 0.5, 220);
           }
         } else if (this.behavior === 'titan_boss_20x') {
-          // FINAL BOSS: CHRONOS 20X STRONGER
           if (dist > 95) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
           if (this.attackCooldown <= 0) {
             const hpPct = this.hp / this.maxHp;
@@ -2028,9 +2134,7 @@ html_template = """<!DOCTYPE html>
             else if (pat === 3) this.startTelegraph('chronos_orbital_lasers', 0.7, 500);
             else this.startTelegraph('chronos_blitz', 0.5, 450);
           }
-        }
-        // --- STANDARD ENEMY BEHAVIORS ---
-        else if (this.behavior === 'swarmer') {
+        } else if (this.behavior === 'swarmer') {
           if (dist > 45) this.moveWithCollision((dx / dist) * moveSpeed * effectiveDt, (dy / dist) * moveSpeed * effectiveDt);
           else if (this.attackCooldown <= 0) this.startTelegraph('circle', 0.45, 60);
         } else if (this.behavior === 'slammer') {
@@ -2131,7 +2235,6 @@ html_template = """<!DOCTYPE html>
         this.attackCooldown = (this.isBoss || this.isMiniBoss ? 1.4 : 1.8) + Math.random() * 1.0;
         const distToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
 
-        // --- MINI-BOSS EXECUTIONS ---
         if (this.telegraphType === 'boss_axe_cleave') {
           sound.playSlash();
           createScreenShake(12);
@@ -2185,9 +2288,7 @@ html_template = """<!DOCTYPE html>
           this.y = this.telegraphTarget.y;
           if (Math.hypot(player.x - this.x, player.y - this.y) <= 160) player.takeDamage(80);
           gameState.particles.push(new AnimatedFireExplosion(this.x, this.y, 200));
-        }
-        // --- 20X CHRONOS EXECUTIONS ---
-        else if (this.telegraphType === 'boss_scythe') {
+        } else if (this.telegraphType === 'boss_scythe') {
           sound.playSlash();
           createScreenShake(18);
           if (distToPlayer < 200) player.takeDamage(85);
@@ -2219,9 +2320,7 @@ html_template = """<!DOCTYPE html>
           this.y = player.y - Math.sin(player.angle) * 80;
           if (Math.hypot(player.x - this.x, player.y - this.y) < 140) player.takeDamage(90);
           gameState.particles.push(new Shockwave(this.x, this.y, 180, '#facc15'));
-        }
-        // --- STANDARD ATTACK EXECUTIONS ---
-        else if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
+        } else if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
           sound.playSlash();
           createScreenShake(6);
           if (distToPlayer <= this.telegraphParam + player.radius) {
@@ -2441,7 +2540,7 @@ html_template = """<!DOCTYPE html>
       }
     }
 
-    // --- PROJECTILE CLASS ---
+    // --- PROJECTILE CLASS (Single-Hit Registration Per Target) ---
     class Projectile {
       constructor(x, y, vx, vy, damage, type, owner) {
         this.x = x;
@@ -2454,6 +2553,7 @@ html_template = """<!DOCTYPE html>
         this.radius = type === 'moon_sickle' ? 22 : (type === 'magma_ball' ? 18 : 12);
         this.lifetime = type === 'moon_sickle' ? 1.3 : 3.5;
         this.angle = 0;
+        this.hitEnemies = new Set();
       }
 
       update(dt) {
@@ -2487,7 +2587,8 @@ html_template = """<!DOCTYPE html>
 
         if (this.owner === player) {
           gameState.enemies.forEach(enemy => {
-            if (Math.hypot(enemy.x - this.x, enemy.y - this.y) <= this.radius + enemy.radius) {
+            if (!this.hitEnemies.has(enemy) && Math.hypot(enemy.x - this.x, enemy.y - this.y) <= this.radius + enemy.radius) {
+              this.hitEnemies.add(enemy);
               enemy.takeDamage(this.damage, 'projectile');
               sound.playHit();
               gameState.particles.push(new HitSpark(enemy.x, enemy.y, '#c084fc'));
@@ -2552,7 +2653,7 @@ html_template = """<!DOCTYPE html>
       }
     }
 
-    // --- ANIMATED ATTACK SWEEP & ELEMENTAL EFFECTS ---
+    // --- ANIMATED ATTACK SWEEP & ELEMENTAL EFFECTS (Hitbox & Visual Aligned 1:1) ---
     class AnimatedAttackSweep {
       constructor(x, y, angle, range, combo) {
         this.x = x;
@@ -2579,14 +2680,14 @@ html_template = """<!DOCTYPE html>
           const ch = animImg.height / 4;
           const sx = this.frame * cw;
           const sy = 0;
-          const drawW = this.range * 2.1;
-          const drawH = this.range * 2.1;
-          ctx.drawImage(animImg, sx, sy, cw, ch, -drawW * 0.15, -drawH / 2, drawW, drawH);
+          // Accurately scaled to match attackRange
+          const drawSize = this.range * 2.0;
+          ctx.drawImage(animImg, sx, sy, cw, ch, -this.range * 0.2, -this.range, drawSize, drawSize);
         } else {
           ctx.strokeStyle = '#2ae6b4';
           ctx.lineWidth = 6;
           ctx.beginPath();
-          ctx.arc(0, 0, this.range, -Math.PI * 0.35, Math.PI * 0.35);
+          ctx.arc(0, 0, this.range, -Math.PI * 0.5, Math.PI * 0.5);
           ctx.stroke();
         }
         ctx.restore();
@@ -2900,8 +3001,7 @@ html_template = """<!DOCTYPE html>
         { x: 380, y: -220, radius: 42 },
         { x: -380, y: 220, radius: 42 },
         { x: 380, y: 220, radius: 42 }
-      ],
-      door: { x: 0, y: -410, radius: 48, isOpen: false }
+      ]
     };
 
     function checkWallCollision(x, y, radius) {
@@ -2925,6 +3025,11 @@ html_template = """<!DOCTYPE html>
 
     function hasBoon(boonId) {
       return gameState.equippedBoons.some(b => b.id === boonId);
+    }
+
+    function getBoonLevel(boonId) {
+      const b = gameState.equippedBoons.find(b => b.id === boonId);
+      return b && b.level ? b.level : 1;
     }
 
     function procChainLightning(initialEnemy, damage) {
@@ -2958,11 +3063,11 @@ html_template = """<!DOCTYPE html>
       }
     }
 
-    // --- 100-CHAMBER PROGRESSION SYSTEM (Mini-bosses at 20, 40, 60, 80; Final Boss at 100) ---
-    function startChamber(chamberIndex) {
+    // --- 100-CHAMBER PROGRESSION WITH MULTIPLE GATES & DIVERSE REWARDS ---
+    function startChamber(chamberIndex, chosenReward = null) {
       gameState.chamber = chamberIndex;
       gameState.enemiesCleared = false;
-      arena.door.isOpen = false;
+      gameState.doors = [];
       gameState.projectiles = [];
       gameState.particles = [];
       player.x = 0;
@@ -2972,16 +3077,28 @@ html_template = """<!DOCTYPE html>
       const subEl = document.getElementById('chamber-sub');
       const bossHud = document.getElementById('boss-hud');
 
-      // 1. FINAL BOSS (Chamber 100)
+      // 1. Grant pre-chosen gate reward if entering a non-combat or specialized room
+      if (chosenReward) {
+        if (chosenReward.type === 'heart') {
+          player.maxHp += 25;
+          player.hp += 25;
+          sound.playBoonChime();
+          gameState.particles.push(new FloatingText(player.x, player.y - 40, '+25 MAX HEALTH!', '#ef4444'));
+        } else if (chosenReward.type === 'ash') {
+          gameState.ashes += 15;
+          sound.playGold();
+          gameState.particles.push(new FloatingText(player.x, player.y - 40, '+15 ASHES!', '#cbd5e1'));
+        }
+      }
+
+      // 2. BOSS & MINI-BOSS CHAMBERS
       if (chamberIndex === 100) {
         gameState.chamberType = 'boss';
         titleEl.innerText = 'HOUSE OF CHRONOS — FINAL BATTLE (CHAMBER 100)';
         subEl.innerText = 'Chronos — The Master of Time (20x Strength)';
         bossHud.style.display = 'flex';
         gameState.enemies = [new Enemy(0, -180, 'chronos')];
-      }
-      // 2. MINI-BOSSES (Chambers 20, 40, 60, 80)
-      else if (chamberIndex === 20) {
+      } else if (chamberIndex === 20) {
         gameState.chamberType = 'miniboss';
         titleEl.innerText = 'EREBUS GATEWAY — MINI-BOSS (CHAMBER 20)';
         subEl.innerText = 'Asterius — The Minotaur King';
@@ -3006,18 +3123,18 @@ html_template = """<!DOCTYPE html>
         bossHud.style.display = 'flex';
         gameState.enemies = [new Enemy(0, -180, 'cerberus_prime')];
       }
-      // 3. SHOPS / SAFE HAVENS (Chambers 10, 30, 50, 70, 90)
-      else if (chamberIndex % 20 === 10) {
+      // 3. CHARON'S SAFE HAVEN SHOP
+      else if (chamberIndex % 20 === 10 || (chosenReward && chosenReward.type === 'shop')) {
         gameState.chamberType = 'shop';
         titleEl.innerText = `CHARON’S SAFE HAVEN — CHAMBER ${chamberIndex} / 100`;
-        subEl.innerText = 'Replenish & Seek Divine Blessings';
+        subEl.innerText = 'Purchase Divine Blessings, Poms & Vitality';
         gameState.enemies = [];
         gameState.enemiesCleared = true;
-        arena.door.isOpen = true;
         bossHud.style.display = 'none';
-        showBoonSelection('selene');
+        setupExitGates();
+        setTimeout(() => openCharonShop(), 400);
       }
-      // 4. STANDARD HARDCORE COMBAT CHAMBERS
+      // 4. STANDARD HARDCORE COMBAT ROOMS
       else {
         gameState.chamberType = 'normal';
         bossHud.style.display = 'none';
@@ -3046,19 +3163,75 @@ html_template = """<!DOCTYPE html>
       updateHUD();
     }
 
-    function onChamberCleared() {
-      gameState.enemiesCleared = true;
-      arena.door.isOpen = true;
-      sound.playBoonChime();
+    // --- SETUP 2-3 EXIT GATES WITH DIVERSE REWARDS (Gods, Poms, Shops, Hearts) ---
+    function setupExitGates() {
+      gameState.doors = [];
+      const isBossComing = [19, 39, 59, 79, 99].includes(gameState.chamber);
+
+      if (isBossComing) {
+        // Single Skull Boss Gate
+        gameState.doors.push({
+          x: 0,
+          y: -410,
+          radius: 52,
+          reward: { type: 'boss', label: 'CHRONOS / MINI-BOSS' }
+        });
+        return;
+      }
+
+      // Generate 2 or 3 distinct gates
+      const gatePositions = [
+        { x: -280, y: -410 },
+        { x: 280, y: -410 }
+      ];
 
       const godKeys = Object.keys(GODS);
-      const chosenGod = godKeys[Math.floor(Math.random() * godKeys.length)];
-      setTimeout(() => {
-        showBoonSelection(chosenGod);
-      }, 600);
+      const rewardTypesPool = [
+        { type: 'god', godKey: godKeys[Math.floor(Math.random() * godKeys.length)] },
+        { type: 'pom', label: 'POM OF POWER (LV UP)' },
+        { type: 'shop', label: 'CHARON SHOP (BUY GOODS)' },
+        { type: 'heart', label: 'CENTAUR HEART (+25 HP)' },
+        { type: 'god', godKey: godKeys[Math.floor(Math.random() * godKeys.length)] }
+      ];
+
+      // Shuffle and pick 2 distinct rewards
+      for (let i = rewardTypesPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [rewardTypesPool[i], rewardTypesPool[j]] = [rewardTypesPool[j], rewardTypesPool[i]];
+      }
+
+      gatePositions.forEach((pos, idx) => {
+        const reward = rewardTypesPool[idx];
+        if (reward.type === 'god') {
+          const g = GODS[reward.godKey];
+          reward.label = `${g.name.toUpperCase()} BOON`;
+        }
+        gameState.doors.push({
+          x: pos.x,
+          y: pos.y,
+          radius: 52,
+          reward: reward
+        });
+      });
     }
 
-    function showBoonSelection(godKey) {
+    function onChamberCleared() {
+      gameState.enemiesCleared = true;
+      sound.playBoonChime();
+
+      // Clear Round Gold Bounty!
+      const roundBounty = 25 + Math.floor(Math.random() * 20);
+      gameState.gold += roundBounty;
+      gameState.particles.push(new FloatingText(player.x, player.y - 30, `+${roundBounty} 🪙 ROUND CLEARED!`, '#f59e0b'));
+      sound.playGold();
+      updateHUD();
+
+      // Open 2-3 Choice Gates
+      setupExitGates();
+    }
+
+    // --- REWARD SELECTION MODALS (God Boon, Pom, Shop) ---
+    function openGodBoonModal(godKey, onComplete) {
       gameState.isPaused = true;
       const god = GODS[godKey] || GODS['zeus'];
       const modal = document.getElementById('boon-modal');
@@ -3093,7 +3266,6 @@ html_template = """<!DOCTYPE html>
       });
 
       const choices = [];
-
       if (availableDuos.length > 0) {
         const duo = availableDuos[Math.floor(Math.random() * availableDuos.length)];
         choices.push({ ...duo, isDuo: true, slot: 'DUO BOON' });
@@ -3117,14 +3289,146 @@ html_template = """<!DOCTYPE html>
           <div class="boon-card-slot">${boon.isDuo ? `Synergy: ${boon.gods.join(' + ')}` : `Slot: ${boon.slot}`}</div>
         `;
         card.onclick = () => {
-          gameState.equippedBoons.push({ ...boon, godName: boon.isDuo ? boon.gods.join(' & ') : god.name });
+          gameState.equippedBoons.push({ ...boon, level: 1, godName: boon.isDuo ? boon.gods.join(' & ') : god.name });
           modal.style.display = 'none';
           gameState.isPaused = false;
           sound.playBoonChime();
           updateHUD();
+          if (onComplete) onComplete();
         };
         container.appendChild(card);
       });
+
+      modal.style.display = 'flex';
+    }
+
+    function openPomModal(onComplete) {
+      if (gameState.equippedBoons.length === 0) {
+        // If no boons, grant +50 Max HP instead
+        player.maxHp += 50;
+        player.hp += 50;
+        sound.playBoonChime();
+        gameState.particles.push(new FloatingText(player.x, player.y - 40, '+50 MAX HP (NO BOONS TO UPGRADE)', '#ef4444'));
+        updateHUD();
+        if (onComplete) onComplete();
+        return;
+      }
+
+      gameState.isPaused = true;
+      const modal = document.getElementById('pom-modal');
+      const pCanvas = document.getElementById('pom-portrait-canvas');
+      const pctx = pCanvas.getContext('2d');
+      pctx.clearRect(0, 0, 120, 120);
+
+      const rewImg = loadedImages['reward_icons'];
+      if (rewImg && rewImg.complete) {
+        pctx.drawImage(rewImg, 0, 0, 256, 256, 0, 0, 120, 120);
+      }
+
+      const container = document.getElementById('pom-choices-container');
+      container.innerHTML = '';
+
+      // Pick up to 3 player boons to level up
+      const upgradeable = [...gameState.equippedBoons].sort(() => Math.random() - 0.5).slice(0, 3);
+
+      upgradeable.forEach(boon => {
+        const curLvl = boon.level || 1;
+        const nextLvl = curLvl + 1;
+        const card = document.createElement('div');
+        card.className = 'boon-card';
+        card.innerHTML = `
+          <div>
+            <div class="boon-rarity" style="color:#ef4444;">POM UPGRADE</div>
+            <div class="boon-card-name">${boon.name} <span class="boon-lvl-badge">Lv ${curLvl} ➔ Lv ${nextLvl}</span></div>
+            <div class="boon-card-desc">${boon.desc}</div>
+          </div>
+          <div class="boon-card-slot">+40% Base Efficacy & Potency</div>
+        `;
+        card.onclick = () => {
+          boon.level = nextLvl;
+          modal.style.display = 'none';
+          gameState.isPaused = false;
+          sound.playBoonChime();
+          updateHUD();
+          if (onComplete) onComplete();
+        };
+        container.appendChild(card);
+      });
+
+      modal.style.display = 'flex';
+    }
+
+    function openCharonShop() {
+      gameState.isPaused = true;
+      const modal = document.getElementById('shop-modal');
+      const sCanvas = document.getElementById('shop-portrait-canvas');
+      const sctx = sCanvas.getContext('2d');
+      sctx.clearRect(0, 0, 120, 120);
+
+      const rewImg = loadedImages['reward_icons'];
+      if (rewImg && rewImg.complete) {
+        sctx.drawImage(rewImg, 256, 0, 256, 256, 0, 0, 120, 120);
+      }
+
+      const container = document.getElementById('shop-choices-container');
+      container.innerHTML = '';
+
+      const godKeys = Object.keys(GODS);
+      const randomGod = godKeys[Math.floor(Math.random() * godKeys.length)];
+
+      const shopItems = [
+        { name: `${GODS[randomGod].name} Divine Blessing`, desc: 'Receive a random rare boon from Olympus.', cost: 140, type: 'god', godKey: randomGod },
+        { name: 'Pom of Power Slice', desc: 'Upgrade one of your equipped boons by +1 Level.', cost: 95, type: 'pom' },
+        { name: 'Underworld Gyros & Nectar', desc: 'Restore 75 Health instantly to Melinoë.', cost: 70, type: 'heal' },
+        { name: 'Centaur Heart Vessel', desc: 'Gain +35 Permanent Maximum Health.', cost: 120, type: 'heart' }
+      ];
+
+      shopItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'boon-card';
+        card.innerHTML = `
+          <div>
+            <div class="boon-rarity" style="color:#f59e0b;">CHARON'S WARES</div>
+            <div class="boon-card-name">${item.name}</div>
+            <div class="boon-card-desc">${item.desc}</div>
+          </div>
+          <div class="boon-card-slot" style="color:#fde047; font-weight:700;">🪙 ${item.cost} Gold Obols</div>
+        `;
+        card.onclick = () => {
+          if (gameState.gold >= item.cost) {
+            gameState.gold -= item.cost;
+            sound.playGold();
+            updateHUD();
+            card.style.opacity = '0.35';
+            card.style.pointerEvents = 'none';
+
+            if (item.type === 'god') {
+              modal.style.display = 'none';
+              openGodBoonModal(item.godKey, () => modal.style.display = 'flex');
+            } else if (item.type === 'pom') {
+              modal.style.display = 'none';
+              openPomModal(() => modal.style.display = 'flex');
+            } else if (item.type === 'heal') {
+              player.hp = Math.min(player.maxHp, player.hp + 75);
+              sound.playBoonChime();
+              updateHUD();
+            } else if (item.type === 'heart') {
+              player.maxHp += 35;
+              player.hp += 35;
+              sound.playBoonChime();
+              updateHUD();
+            }
+          } else {
+            sound.playHit();
+          }
+        };
+        container.appendChild(card);
+      });
+
+      document.getElementById('leave-shop-btn').onclick = () => {
+        modal.style.display = 'none';
+        gameState.isPaused = false;
+      };
 
       modal.style.display = 'flex';
     }
@@ -3225,10 +3529,11 @@ html_template = """<!DOCTYPE html>
       gameState.equippedBoons.forEach(b => {
         const item = document.createElement('div');
         item.className = `boon-badge ${b.isDuo ? 'duo' : ''}`;
+        const lvlTag = b.level && b.level > 1 ? `<span class="boon-lvl-badge">Lv ${b.level}</span>` : '';
         item.innerHTML = `
           <div>
             <div class="boon-badge-god">${b.isDuo ? '★ DUO SYNERGY' : b.godName}</div>
-            <div class="boon-badge-name">${b.name}</div>
+            <div class="boon-badge-name">${b.name} ${lvlTag}</div>
           </div>
         `;
         boonsList.appendChild(item);
@@ -3255,10 +3560,24 @@ html_template = """<!DOCTYPE html>
         gameState.particles.forEach(p => p.update(dt));
         gameState.particles = gameState.particles.filter(p => p.life > 0);
 
-        if (arena.door.isOpen) {
-          if (Math.hypot(player.x - arena.door.x, player.y - arena.door.y) < arena.door.radius + player.radius) {
-            startChamber(gameState.chamber + 1);
-          }
+        // Check gate entry
+        if (gameState.doors.length > 0) {
+          gameState.doors.forEach(door => {
+            if (Math.hypot(player.x - door.x, player.y - door.y) < door.radius + player.radius) {
+              const reward = door.reward;
+              const nextChamber = gameState.chamber + 1;
+
+              if (reward.type === 'god') {
+                openGodBoonModal(reward.godKey, () => startChamber(nextChamber));
+              } else if (reward.type === 'pom') {
+                openPomModal(() => startChamber(nextChamber));
+              } else if (reward.type === 'shop') {
+                startChamber(nextChamber, reward);
+              } else {
+                startChamber(nextChamber, reward);
+              }
+            }
+          });
         }
 
         gameState.camera.x += (player.x - gameState.camera.x) * 0.1;
@@ -3281,8 +3600,8 @@ html_template = """<!DOCTYPE html>
       // 1. Seamless Stone Floor & Walls
       drawChamberTiles(ctx);
 
-      // 2. Props (Exit Gate, Altar, Pillars with Torches)
-      drawProps(ctx);
+      // 2. Props (Exit Gates with Floating Reward Medallions)
+      drawProps(ctx, time);
 
       // 3. Lower Particles (Fire trails & Ice traps)
       gameState.particles.forEach(p => { if (p instanceof FireTrail || p instanceof IceShardTrap) p.draw(ctx); });
@@ -3342,10 +3661,13 @@ html_template = """<!DOCTYPE html>
       ctx.strokeRect(-halfW, -halfH, arena.width, arena.height);
     }
 
-    function drawProps(ctx) {
+    function drawProps(ctx, time) {
       const tilesImg = loadedImages['consistent_tiles'];
       const propsImg = loadedImages['props'];
+      const godsImg = loadedImages['all_10_gods'];
+      const rewImg = loadedImages['reward_icons'];
 
+      // Pillars
       arena.pillars.forEach(pillar => {
         ctx.beginPath();
         ctx.ellipse(pillar.x, pillar.y + 24, pillar.radius * 1.1, pillar.radius * 0.55, 0, 0, Math.PI * 2);
@@ -3368,30 +3690,63 @@ html_template = """<!DOCTYPE html>
         ctx.fill();
       });
 
-      const door = arena.door;
-      ctx.save();
-      ctx.translate(door.x, door.y);
+      // Interactive Exit Gates with 3D Preview Medallions
+      if (gameState.doors.length > 0) {
+        gameState.doors.forEach((door, idx) => {
+          ctx.save();
+          ctx.translate(door.x, door.y);
 
-      if (propsImg && propsImg.complete) {
-        const cw = propsImg.width / 3;
-        const ch = propsImg.height / 3;
-        ctx.drawImage(propsImg, cw * 2, 0, cw, ch, -60, -100, 120, 120);
-      } else {
-        ctx.beginPath();
-        ctx.arc(0, 0, door.radius, Math.PI, 0);
-        ctx.fillStyle = door.isOpen ? '#2ae6b4' : '#2a1a12';
-        ctx.fill();
-      }
+          // Gate arch
+          if (propsImg && propsImg.complete) {
+            const cw = propsImg.width / 3;
+            const ch = propsImg.height / 3;
+            ctx.drawImage(propsImg, cw * 2, 0, cw, ch, -60, -100, 120, 120);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, door.radius, Math.PI, 0);
+            ctx.fillStyle = '#2ae6b4';
+            ctx.fill();
+          }
 
-      if (door.isOpen) {
-        ctx.font = 'bold 15px Cinzel';
-        ctx.fillStyle = '#fff2a8';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#000';
-        ctx.shadowBlur = 6;
-        ctx.fillText('ENTER CHAMBER', 0, -30);
+          // Floating Reward Medallion above gate
+          const bob = Math.sin(time / 280 + idx * 2) * 8;
+          const medY = -140 + bob;
+
+          // Glowing aura behind medallion
+          ctx.beginPath();
+          ctx.arc(0, medY, 36, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(230, 180, 80, 0.35)';
+          ctx.fill();
+
+          // Render specific reward medallion
+          if (door.reward.type === 'god' && godsImg && godsImg.complete) {
+            const god = GODS[door.reward.godKey];
+            if (god) {
+              const col = god.portraitIndex % 5;
+              const row = Math.floor(god.portraitIndex / 5);
+              ctx.drawImage(godsImg, col * 256, row * 256, 256, 256, -32, medY - 32, 64, 64);
+            }
+          } else if (door.reward.type === 'pom' && rewImg && rewImg.complete) {
+            ctx.drawImage(rewImg, 0, 0, 256, 256, -32, medY - 32, 64, 64);
+          } else if (door.reward.type === 'shop' && rewImg && rewImg.complete) {
+            ctx.drawImage(rewImg, 256, 0, 256, 256, -32, medY - 32, 64, 64);
+          } else if (door.reward.type === 'heart' && rewImg && rewImg.complete) {
+            ctx.drawImage(rewImg, 0, 256, 256, 256, -32, medY - 32, 64, 64);
+          } else if (door.reward.type === 'ash' && rewImg && rewImg.complete) {
+            ctx.drawImage(rewImg, 256, 256, 256, 256, -32, medY - 32, 64, 64);
+          }
+
+          // Gate Label
+          ctx.font = 'bold 12px Cinzel';
+          ctx.fillStyle = '#fff2a8';
+          ctx.textAlign = 'center';
+          ctx.shadowColor = '#000';
+          ctx.shadowBlur = 6;
+          ctx.fillText(door.reward.label || 'ENTER CHAMBER', 0, -190 + bob);
+
+          ctx.restore();
+        });
       }
-      ctx.restore();
     }
 
     // Start game
@@ -3408,4 +3763,4 @@ final_html = html_template.replace('%ASSETS_JSON%', json.dumps(b64_data))
 with open('index.html', 'w', encoding='utf-8') as f:
     f.write(final_html)
 
-print(f"Successfully compiled 100 Chambers Hardcore Edition index.html ({len(final_html)} bytes)!")
+print(f"Successfully compiled Complete Edition index.html with multiple gates, poms, and 100+ boons ({len(final_html)} bytes)!")
