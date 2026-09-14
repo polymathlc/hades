@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="application-version" content="2.0.0" />
+  <meta name="theme-color" content="#08131b" />
+  <title>HADES II: Chronos Fall — Endless Descent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Philosopher:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+%STYLES%
+</style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas" aria-label="Underworld battle arena">Your browser needs Canvas support to play Chronos Fall.</canvas>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+      <!-- Top HUD -->
+      <div class="top-hud">
+        <div class="player-bars">
+          <div class="bar-wrapper">
+            <div id="hp-bar" class="bar-fill health" style="width: 100%;"></div>
+            <div class="bar-text"><span>HEALTH</span><span id="hp-text">100 / 100</span></div>
+          </div>
+          <div class="bar-wrapper">
+            <div id="magick-bar" class="bar-fill magick" style="width: 100%;"></div>
+            <div class="bar-text"><span>MAGICK</span><span id="magick-text">50 / 50</span></div>
+          </div>
+        </div>
+
+        <div class="top-center-hud">
+          <div id="chamber-name" class="chamber-title">EREBUS · CHAMBER 1</div>
+          <div id="chamber-sub" class="chamber-subtitle">Underworld Gateway</div>
+        </div>
+
+        <div class="currency-panel">
+          <div class="currency-item"><span class="icon-obol" aria-label="Gold obols"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><circle cx="18" cy="18" r="13"/><circle cx="18" cy="18" r="10"/><path d="m18 10 5 8-5 8-5-8Z"/></svg></span> <span id="gold-count">0</span></div>
+          <div class="currency-item"><span class="icon-ash" aria-label="Ashes"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M20 3c3 9-8 9-4 16 3-3 6-4 8-8 8 9 6 20-6 22C5 30 7 18 11 14c0 6 3 7 3 7C8 13 19 10 20 3Z"/></svg></span> <span id="ash-count">0</span></div>
+          <div class="currency-item"><span class="icon-bones" aria-label="Bones"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="m11 9 16 16c7-2 9 6 4 8-4 1-5-2-5-4L9 12c-5 3-9-3-6-6 3-4 9-2 8 3Z"/></svg></span> <span id="bones-count">0</span></div>
+          <button id="open-codex-btn" class="hades-btn" aria-label="Open boons codex">BOONS [TAB]</button>
+        </div>
+      </div>
+
+      <!-- Left Active Boons HUD -->
+      <div id="active-boons" class="active-boons-list"></div>
+
+      <!-- Controls helper -->
+      <div class="controls-banner">
+        <span><span class="key-badge">WASD</span> Move</span>
+        <span><span class="key-badge">L-CLICK / J</span> Strike</span>
+        <span><span class="key-badge">R-CLICK / K</span> Special</span>
+        <span><span class="key-badge">Q / E</span> Cast</span>
+        <span><span class="key-badge">SPACE</span> Dash</span>
+        <span><span class="key-badge">F</span> Hex</span>
+        <span><span class="key-badge">TAB</span> Boons Codex</span>
+        <span><span class="key-badge">M</span> Mute</span>
+      </div>
+
+      <!-- Bottom HUD -->
+      <div class="bottom-hud">
+        <div class="abilities-cluster">
+          <div class="ability-slot active">
+            <div class="ability-key">L-CLICK</div>
+            <div class="ability-icon"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="m9 25 15-15 5-2-2 5-15 15m-4-5 8 8M7 30l-3 3m19-22 3 3"/></svg></div>
+            <div class="ability-name">Strike</div>
+          </div>
+          <div class="ability-slot active">
+            <div class="ability-key">R-CLICK</div>
+            <div class="ability-icon"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M27 5a14 14 0 1 0 5 22A13 13 0 0 1 27 5Z"/><path d="m10 8 2-4 2 4 4 2-4 2-2 4-2-4-4-2Z"/></svg></div>
+            <div class="ability-name">Special</div>
+          </div>
+          <div class="ability-slot active">
+            <div class="ability-key">Q</div>
+            <div class="ability-icon"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><circle cx="18" cy="18" r="13"/><circle cx="18" cy="18" r="9"/><path d="m18 8 9 15H9Zm0-6v3m0 26v3M2 18h3m26 0h3"/></svg></div>
+            <div class="ability-name">Cast</div>
+          </div>
+          <div class="ability-slot active">
+            <div class="ability-key">SPACE</div>
+            <div class="ability-icon"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="m13 7 13 11-13 11m7-22 13 11-13 11M3 11h9M1 18h14M3 25h9"/></svg></div>
+            <div class="ability-name">Dash</div>
+          </div>
+        </div>
+
+        <!-- Boss / Mini-Boss Health Bar -->
+        <div id="boss-hud" class="boss-bar-container">
+          <div id="boss-name-text" class="boss-name">CHRONOS — TITAN OF TIME</div>
+          <div class="boss-bar-frame">
+            <div id="boss-hp-bar" class="boss-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- Selene Hex Gauge -->
+        <div id="hex-gauge" class="hex-circle">
+          <div class="ability-key">F</div>
+          <div class="hex-emblem"><svg class="ui-glyph" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M27 5a14 14 0 1 0 5 22A13 13 0 0 1 27 5Z"/><path d="m10 8 2-4 2 4 4 2-4 2-2 4-2-4-4-2Z"/></svg></div>
+          <div style="font-size: 9px; font-family: var(--font-title); color: #c084fc; font-weight: 700;">HEX</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- God Boon Modal -->
+    <div id="boon-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="dialogue-modal">
+          <canvas id="god-portrait-canvas" class="dialogue-portrait-canvas" width="140" height="140"></canvas>
+          <div class="dialogue-content">
+            <div id="god-name" class="dialogue-god-name">ZEUS, LORD OF OLYMPUS</div>
+            <div id="god-quote" class="dialogue-text">"Take my lightning, niece. Smite the usurper of Time and light up the darkness!"</div>
+          </div>
+        </div>
+        <div class="modal-title">CHOOSE A BOON</div>
+        <div class="modal-subtitle">Bestow divine power or forge legendary Duo Boons</div>
+        <div id="boon-choices-container" class="boon-cards-grid"></div>
+      </div>
+    </div>
+
+    <!-- Pom of Power Modal (Pomegranate Level Up) -->
+    <div id="pom-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div style="display:flex; justify-content:center; margin-bottom:12px;">
+          <canvas id="pom-portrait-canvas" class="dialogue-portrait-canvas" width="120" height="120"></canvas>
+        </div>
+        <div class="modal-title">POM OF POWER</div>
+        <div class="modal-subtitle">Enhance the potency of one of your existing divine blessings (+40% Power per Lv)</div>
+        <div id="pom-choices-container" class="boon-cards-grid"></div>
+      </div>
+    </div>
+
+    <!-- Charon's Shop Modal -->
+    <div id="shop-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div style="display:flex; justify-content:center; margin-bottom:12px;">
+          <canvas id="shop-portrait-canvas" class="dialogue-portrait-canvas" width="120" height="120"></canvas>
+        </div>
+        <div class="modal-title">CHARON'S OBOLEUM VAULT</div>
+        <div class="modal-subtitle">"Hrrrnnnn... (Purchase sacred goods with your collected Gold Obols)"</div>
+        <div id="shop-choices-container" class="boon-cards-grid"></div>
+        <button id="leave-shop-btn" class="hades-btn" style="margin-top:20px;">PROCEED TO NEXT CHAMBER ➔</button>
+      </div>
+    </div>
+
+    <!-- Boon & Skill Codex Modal [TAB] -->
+    <div id="codex-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title">PRAYERS & BLESSINGS CODEX</div>
+        <div class="modal-subtitle">Press [TAB] or [ESC] to resume your Underworld trial</div>
+
+        <div class="codex-stats-bar">
+          <div class="codex-stat-item">❤️ HP: <span id="codex-hp">100/100</span></div>
+          <div class="codex-stat-item">🔮 Magick: <span id="codex-magick">50/50</span></div>
+          <div class="codex-stat-item">🗡️ Might: <span id="codex-damage">+0%</span></div>
+          <div class="codex-stat-item">🌪️ Defiance: <span id="codex-defiance">1</span></div>
+          <div class="codex-stat-item">🪙 Gold: <span id="codex-gold">0</span></div>
+          <div class="codex-stat-item">🌪️ Ashes: <span id="codex-ashes">0</span></div>
+        </div>
+
+        <div id="codex-cards-container" class="codex-grid"></div>
+        <button id="close-codex-btn" class="hades-btn" style="margin-top:14px;">RESUME TRIAL [TAB / ESC]</button>
+      </div>
+    </div>
+
+    <!-- Altar of Ashes -->
+    <div id="altar-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title">THE ALTAR OF ASHES</div>
+        <div class="modal-subtitle">Channel the remnants of the underworld to empower Melinoë</div>
+        <div class="altar-grid" id="altar-items-grid"></div>
+        <button id="start-run-btn" class="hades-btn">DESCEND INTO THE UNDERWORLD ➔</button>
+      </div>
+    </div>
+
+    <!-- Game Over / Victory Modal -->
+    <div id="gameover-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div id="gameover-title" class="modal-title">DEATH APPROACHES</div>
+        <div id="gameover-subtitle" class="modal-subtitle">There is no escape from the Underworld. Return to the Crossroads.</div>
+        <div style="margin: 20px 0; font-size: 16px; color: var(--gold-light);">
+          <div>Chambers Cleared: <span id="stats-chambers">0</span></div>
+          <div>Enemies Vanquished: <span id="stats-kills">0</span></div>
+          <div>Ashes Collected: <span id="stats-ashes">0</span></div>
+        </div>
+        <button id="return-crossroads-btn" class="hades-btn">RETURN TO CROSSROADS</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+%SCRIPTS%
+</script>
+</body>
+</html>

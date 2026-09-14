@@ -1,0 +1,64 @@
+/* Safe-area aware controls. Hidden menus never intercept arena input. */
+[hidden] { display: none !important; }
+#gameCanvas { touch-action: none; outline: none; }
+#runtime-toolbar { position: static; flex-shrink: 0; }
+#runtime-toolbar button { min-width: 64px; min-height: 32px; padding: 6px 9px; border: 1px solid #8e865b; border-radius: 5px; background: #101d29ed; color: #f5dda0; font: 700 10px var(--font-title); cursor: pointer; }
+#runtime-overlay { position: absolute; inset: 0; z-index: 100; display: grid; place-items: center; padding: 22px; background: radial-gradient(ellipse at 50% 30%, #24454cbb, #050912f5 80%); overflow-y: auto; }
+.runtime-panel { width: min(640px, 100%); padding: clamp(22px, 4vw, 42px); border: 1px solid #b49b54; border-radius: 22px; box-shadow: 0 24px 100px #000a, inset 0 0 60px #264b5533; background: linear-gradient(135deg, #111e2bfa, #091219f7); color: #dfebea; text-align: center; }
+.runtime-eyebrow { letter-spacing: 3px; color: #76cdb9; font: 700 10px var(--font-title); line-height: 1.6; }
+.runtime-panel h1 { margin: 18px 0 14px; font: 700 clamp(25px, 4vw, 40px)/1.16 var(--font-title); color: #ffe4a7; text-shadow: 0 2px 25px #d4ad5933; }
+.runtime-panel p { font-size: 16px; line-height: 1.5; color: #b6c8d0; margin: 12px 0; }
+.runtime-help { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 24px 0 18px; text-align: left; }
+.runtime-help span { padding: 10px; border: 1px solid #31505b; border-radius: 9px; font-size: 12px; color: #d9e5e9; }
+.runtime-help b { display: block; margin-bottom: 5px; font: 700 9px var(--font-title); color: #8dd5c8; letter-spacing: 1px; }
+.runtime-settings { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; padding: 12px 0 19px; }
+.runtime-settings label { display: flex; align-items: center; gap: 8px; font-size: 14px; min-height: 32px; cursor: pointer; }
+.runtime-settings input { width: 18px; height: 18px; accent-color: #81dbba; }
+.runtime-primary { width: 100%; min-height: 52px; border: 1px solid #ffedbb; border-radius: 10px; color: #192328; background: linear-gradient(100deg, #f6d68b, #d2b972); font: 700 15px var(--font-title); cursor: pointer; box-shadow: 0 4px 24px #d7b95d22; }
+.runtime-primary:disabled { opacity: .55; cursor: progress; }
+.runtime-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.runtime-panel #runtime-status { font-size: 12px; margin-bottom: 0; color: #94b4b7; }
+.runtime-touch-hint { display: none; }
+button:focus-visible, input:focus-visible { outline: 3px solid #89eddd; outline-offset: 4px; }
+#touch-controls { position: absolute; z-index: 16; left: 0; right: 0; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; align-items: end; justify-content: space-between; padding: 0 max(14px, env(safe-area-inset-left)); pointer-events: none; }
+#touch-controls.controls-blocked { visibility: hidden; }
+#touch-stick { position: relative; width: 122px; height: 122px; border-radius: 50%; background: #0a172696; border: 1px solid #84c6c65c; pointer-events: auto; touch-action: none; }
+.touch-stick-ring { position: absolute; inset: 16px; border: 1px dashed #93d6d34d; border-radius: 50%; }
+#touch-stick-knob { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle at 35% 25%, #83ddcba3, #163f4acc); border: 1px solid #a5f2dfb0; box-shadow: 0 4px 16px #0008; }
+.touch-stick-label { position: absolute; left: 0; right: 0; bottom: 7px; text-align: center; font: 700 9px var(--font-title); color: #b6d8de; letter-spacing: 1px; }
+.touch-actions { display: grid; grid-template-columns: repeat(3, 52px); gap: 7px; align-items: center; }
+.touch-action { min-height: 48px; border-radius: 14px; border: 1px solid #a7c5c6a6; color: #e9f6f2; background: #172f3ddd; font: 700 10px var(--font-title); pointer-events: auto; touch-action: none; }
+.touch-action.is-held { background: #437d79; box-shadow: 0 0 18px #7eebbd6b; transform: scale(.96); }
+.touch-strike { grid-column: span 2; color: #fff0c1; border-color: #d7bd77; background: #5b4829e8; }
+.touch-dash { border-color: #a1e4c2; color: #b1f3d6; }
+.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+@media (pointer: coarse) {
+  .runtime-help { display: none; } .runtime-touch-hint { display: block; }
+  .controls-banner, .abilities-cluster, .hex-circle { display: none !important; }
+  #boss-hud { bottom: max(154px, env(safe-area-inset-bottom)); margin-bottom: 0; }
+  #runtime-toolbar button, #open-codex-btn { min-height: 44px; }
+}
+@media (max-width: 760px) {
+  .currency-panel { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 5px 8px; }
+  .currency-item { justify-content: center; }
+  #open-codex-btn { grid-column: 1 / 3; width: 100%; }
+  #runtime-toolbar { grid-column: 3; }
+  #runtime-toolbar button { width: 100%; min-width: 38px; }
+  #runtime-toolbar button span { display: none; }
+}
+@media (max-width: 600px) {
+  #runtime-overlay { padding: 12px; } .runtime-panel { border-radius: 16px; padding: 24px 20px; }
+  .runtime-panel h1 { font-size: 28px; } .runtime-help { grid-template-columns: repeat(2, 1fr); }
+  #runtime-toolbar button span { display: none; } #runtime-toolbar button { min-width: 42px; }
+}
+@media (max-height: 500px) {
+  #runtime-overlay { place-items: start center; padding: 10px; } .runtime-panel { padding: 18px 24px; }
+  .runtime-panel h1 { margin: 8px 0; font-size: 26px; } .runtime-panel p { margin: 7px 0; font-size: 13px; }
+  .runtime-help { margin: 10px 0; } .runtime-settings { padding: 4px 0 10px; } #touch-stick { width: 102px; height: 102px; }
+}
+@media (pointer: coarse) and (max-height: 560px) and (min-width: 600px) {
+  .currency-panel { display: flex; }
+  #runtime-toolbar button { min-width: 38px; }
+  #runtime-toolbar button span { display: none; }
+  #boss-hud { bottom: max(20px, env(safe-area-inset-bottom)); width: calc(100vw - 380px); max-width: 520px; }
+}
