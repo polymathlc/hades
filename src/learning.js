@@ -4,16 +4,54 @@ const HADES_LEARNING_ENABLED = new URLSearchParams(window.location.search).get('
 const hadesLearning = {
   enabled: HADES_LEARNING_ENABLED, sessionId: null, profileKey: null,
   helloId: null, round: 0, pending: null, onStart: null, timer: null,
-  tier: 'common', state: 'idle', subject: new URLSearchParams(window.location.search).get('subject') === 'math' ? 'Math' : 'Science'
+  tier: 'common', rewardEpoch: 0, state: 'idle', subject: new URLSearchParams(window.location.search).get('subject') === 'math' ? 'Math' : 'Science'
 };
-const HADES_BOON_TIERS = { common: {name: 'Common', rank: 1}, rare: {name: 'Rare', rank: 2}, epic: {name: 'Epic', rank: 3}, heroic: {name: 'Heroic', rank: 4} };
+const HADES_BOON_TIERS = {
+  fractured: {name:'Fractured', rank:0, fallback:1, heart:1, shopHeart:1, ash:1},
+  common: {name:'Common', rank:1, fallback:5, heart:10, shopHeart:12, ash:5},
+  uncommon: {name:'Uncommon', rank:2, fallback:10, heart:18, shopHeart:24, ash:10},
+  rare: {name:'Rare', rank:3, fallback:20, heart:25, shopHeart:35, ash:15},
+  epic: {name:'Epic', rank:5, fallback:35, heart:40, shopHeart:50, ash:25},
+  heroic: {name:'Heroic', rank:8, fallback:60, heart:60, shopHeart:80, ash:40}
+};
 function learningRewardForScore(correct) {
   if (!Number.isInteger(correct) || correct < 0 || correct > 5) return null;
-  return {correct, total: 5, healPercent: correct * 8, boonTier: correct === 5 ? 'heroic' : correct === 4 ? 'epic' : correct >= 2 ? 'rare' : 'common'};
+  return {correct, total: 5, healPercent: correct * 8, boonTier: ['fractured','common','uncommon','rare','epic','heroic'][correct]};
 }
 function learningStorageKey() {
   if (!hadesLearning.enabled) return 'chronos-fall-progress-v1';
   return hadesLearning.profileKey ? 'chronos-fall-learning-v1:' + encodeURIComponent(hadesLearning.profileKey) : null;
+}
+function learningMaxLifeReward(kind = 'fallback') { return HADES_BOON_TIERS[hadesLearning.tier][kind]; }
+function learningAshReward() { return HADES_BOON_TIERS[hadesLearning.tier].ash; }
+function applyLearningMaxLife(amount) {
+  // An upgrade increases capacity; only quiz accuracy supplies checkpoint healing.
+  player.maxHp += amount;
+  gameState.particles.push(new FloatingText(player.x, player.y - 40, '+' + amount + ' MAX LIFE · NO HEALING', '#efbda7'));
+  updateHUD();
+}
+function learningRewardGuard() {
+  const {rewardEpoch, sessionId, round, tier} = hadesLearning;
+  return () => !hadesLearning.enabled || (hadesLearning.rewardEpoch === rewardEpoch && hadesLearning.sessionId === sessionId && hadesLearning.round === round && hadesLearning.tier === tier);
+}
+function openFracturedBoonReward(onComplete) {
+  const canClaimReward = learningRewardGuard();
+  const modal = document.getElementById('boon-modal');
+  document.getElementById('pom-modal').style.display = 'none';
+  document.getElementById('god-name').innerText = 'FRACTURED · 0/5 CORRECT';
+  document.getElementById('god-quote').innerText = 'A tiny consolation. Improve your answers to earn stronger upgrades.';
+  const portrait = document.getElementById('god-portrait-canvas');
+  portrait.getContext('2d').clearRect(0,0,portrait.width,portrait.height);
+  const choices = document.getElementById('boon-choices-container'); choices.innerHTML = '';
+  const card = document.createElement('button'); card.type = 'button'; card.className = 'boon-card';
+  card.innerHTML = '<div><div class="boon-rarity">FRACTURED REWARD</div><div class="boon-card-name">Faint life fragment</div><div class="boon-card-desc">+1 maximum life only. No healing, new boon or Pom levels.</div></div><div class="boon-card-slot">Claim and continue</div>';
+  let claimed = false;
+  card.onclick = () => {
+    if (claimed || !canClaimReward()) return; claimed = true;
+    applyLearningMaxLife(1); sound.playBoonChime(); modal.style.display = 'none'; gameState.isPaused = false;
+    if (onComplete) onComplete();
+  };
+  choices.appendChild(card); modal.style.display = 'flex'; gameState.isPaused = true;
 }
 function learningBoonRank() { return hadesLearning.enabled ? HADES_BOON_TIERS[hadesLearning.tier].rank : 1; }
 function learningBoonLabel() { return hadesLearning.enabled ? HADES_BOON_TIERS[hadesLearning.tier].name + ' · sanctuary reward' : 'Rare boon'; }
@@ -33,7 +71,11 @@ function showLearningWait(title, message) {
 }
 function hideLearningWait() { document.getElementById('learning-wait').style.display = 'none'; }
 function resetLearningSession() {
-  clearLearningTimer();
+  clearLearningTimer(); hadesLearning.rewardEpoch++;
+  for (const kind of ['boon','pom','shop']) {
+    const modal = document.getElementById(kind + '-modal'); if (modal) modal.style.display = 'none';
+    const choices = document.getElementById(kind + '-choices-container'); if (choices) choices.innerHTML = '';
+  }
   hadesLearning.sessionId = null; hadesLearning.profileKey = null;
   hadesLearning.helloId = null; hadesLearning.pending = null; hadesLearning.onStart = null;
   hadesLearning.round = 0; hadesLearning.tier = 'common'; hadesLearning.state = 'idle';
@@ -140,7 +182,7 @@ function receiveLearningMessage(event) {
 function installHadesLearning() {
   if (!hadesLearning.enabled) return;
   const panel = document.createElement('div'); panel.id = 'learning-wait'; panel.className = 'modal-overlay';
-  panel.innerHTML = '<section class="modal-card learning-card" role="dialog" aria-modal="true" aria-labelledby="learning-title"><div class="runtime-eyebrow">SANCTUARY CHECKPOINT</div><h2 id="learning-title"></h2><p id="learning-message" role="status"></p><p class="learning-tiers">0–1 correct: Common · 2–3: Rare · 4: Epic · 5: Heroic</p><div class="learning-buttons"><button id="learning-retry" class="hades-btn" type="button">Retry</button><button id="learning-end" class="hades-btn" type="button">End run</button></div></section>';
+  panel.innerHTML = '<section class="modal-card learning-card" role="dialog" aria-modal="true" aria-labelledby="learning-title"><div class="runtime-eyebrow">SANCTUARY CHECKPOINT</div><h2 id="learning-title"></h2><p id="learning-message" role="status"></p><p class="learning-tiers">0: Fractured · 1: Common · 2: Uncommon · 3: Rare · 4: Epic · 5: Heroic (Lv 8 / +8 Pom)</p><div class="learning-buttons"><button id="learning-retry" class="hades-btn" type="button">Retry</button><button id="learning-end" class="hades-btn" type="button">End run</button></div></section>';
   document.getElementById('game-container').append(panel); gameRuntime.modalNodes.push(panel);
   document.getElementById('learning-retry').onclick = () => {
     if (hadesLearning.pending) requestLearningRound();

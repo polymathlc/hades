@@ -197,7 +197,7 @@
         <div id="runtime-toolbar"><button id="runtime-pause" type="button" aria-label="Pause game and open settings">Ⅱ <span>Pause</span></button></div>
         <section id="runtime-overlay" role="dialog" aria-modal="true" aria-labelledby="runtime-title">
           <div class="runtime-panel">
-            <div class="runtime-eyebrow">CHRONOS FALL · UNDERWORLD ODYSSEY · v2.1.0</div><h1 id="runtime-title">Defy the Titan of Time</h1>
+            <div class="runtime-eyebrow">CHRONOS FALL · UNDERWORLD ODYSSEY · v2.1.1</div><h1 id="runtime-title">Defy the Titan of Time</h1>
             <p id="runtime-description">Descend through shifting chambers, forge a divine build and challenge the endless depths beyond Chronos.</p>
             <div class="runtime-help"><span><b>MOVE</b> WASD / Arrows</span><span><b>STRIKE</b> Hold click / J</span><span><b>SPECIAL</b> Right click / K</span><span><b>DASH</b> Space / Shift</span><span><b>CAST</b> Q / E</span><span><b>HEX</b> F when charged</span></div>
             <p class="runtime-touch-hint">Touch: move with the left pad and use the ability buttons. Attacks aim at the nearest foe.</p>

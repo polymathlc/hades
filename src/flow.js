@@ -33,13 +33,14 @@
       // 1. Grant pre-chosen gate reward if entering a non-combat or specialized room
       if (chosenReward) {
         if (chosenReward.type === 'heart') {
-          gainHealth(25, true);
+          if (typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED) applyLearningMaxLife(learningMaxLifeReward('heart'));
+          else { gainHealth(25, true); gameState.particles.push(new FloatingText(player.x, player.y - 40, '+25 MAX HEALTH!', '#ef4444')); }
           sound.playBoonChime();
-          gameState.particles.push(new FloatingText(player.x, player.y - 40, '+25 MAX HEALTH!', '#ef4444'));
         } else if (chosenReward.type === 'ash') {
-          gameState.ashes += 15;
+          const ashes = typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED ? learningAshReward() : 15;
+          gameState.ashes += ashes;
           sound.playGold();
-          gameState.particles.push(new FloatingText(player.x, player.y - 40, '+15 ASHES!', '#cbd5e1'));
+          gameState.particles.push(new FloatingText(player.x, player.y - 40, '+' + ashes + ' ASHES!', '#cbd5e1'));
         }
       }
 
@@ -238,6 +239,7 @@
 
     // --- REWARD SELECTION MODALS (God Boon, Pom, Shop) ---
     function openGodBoonModal(godKey, onComplete) {
+      if (typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED && learningBoonRank() === 0) { openFracturedBoonReward(onComplete); return; }
       gameState.isPaused = true;
       const god = GODS[godKey] || GODS['zeus'];
       const modal = document.getElementById('boon-modal');
@@ -289,6 +291,7 @@
         openPomModal(onComplete, god.boons.map(boon => boon.id));
         return;
       }
+      const canClaimReward = typeof learningRewardGuard === 'function' ? learningRewardGuard() : () => true;
       let chosen = false;
       choices.forEach(boon => {
         const rewardLevel = POM_UPGRADE_EFFECTS[boon.id] && typeof learningBoonRank === 'function' ? learningBoonRank() : 1;
@@ -301,18 +304,19 @@
             <div class="boon-card-name">${boon.name}</div>
             <div class="boon-card-desc">${boon.desc}</div>
             ${rewardLevel > 1 ? `<div class="boon-card-desc">Lv ${rewardLevel}: ${pomUpgradeDescription(boon, rewardLevel)}</div>` : ''}
-            ${typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED && !POM_UPGRADE_EFFECTS[boon.id] ? '<div class="boon-card-desc">Unique effect · fixed strength</div>' : ''}
+            ${typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED && !POM_UPGRADE_EFFECTS[boon.id] ? `<div class="boon-card-desc">Unique effect + ${learningBoonRank() * 5} maximum life reinforcement (no healing)</div>` : ''}
           </div>
           <div class="boon-card-slot">${boon.isDuo ? `Synergy: ${boon.gods.join(' + ')}` : boon.slot === 'Hex' ? 'Hex ability • replaces your current Hex' : `Slot: ${boon.slot}`}</div>
         `;
         card.onclick = () => {
-          if (chosen) return;
+          if (chosen || !canClaimReward()) return;
           chosen = true;
           // Hexes are alternative ultimate abilities. A new Hex replaces the old one.
           if (boon.slot === 'Hex') gameState.equippedBoons = gameState.equippedBoons.filter(owned => owned.slot !== 'Hex');
           gameState.equippedBoons.push({ ...boon, level: rewardLevel, tier: typeof hadesLearning !== 'undefined' && hadesLearning.enabled ? hadesLearning.tier : 'rare', godName: boon.isDuo ? boon.gods.join(' & ') : god.name });
           if (boon.id === 'hephaestus_armor') { player.maxHp += 50; player.hp += 50; }
           if (boon.id === 'hephaestus_shield') player.barrierHp = 40;
+          if (typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED && !POM_UPGRADE_EFFECTS[boon.id]) applyLearningMaxLife(learningBoonRank() * 5);
           modal.style.display = 'none';
           gameState.isPaused = false;
           sound.playBoonChime();
@@ -326,12 +330,16 @@
     }
 
     function openPomModal(onComplete, preferredIds = null) {
+      if (typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED && learningBoonRank() === 0) { openFracturedBoonReward(onComplete); return; }
       const scalable = gameState.equippedBoons.filter(boon => POM_UPGRADE_EFFECTS[boon.id]);
       if (scalable.length === 0) {
         // A build made entirely of unique utility effects still receives a useful reward.
-        gainHealth(50, true);
+        if (typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED) applyLearningMaxLife(learningMaxLifeReward());
+        else {
+          gainHealth(50, true);
+          gameState.particles.push(new FloatingText(player.x, player.y - 40, '+50 BASE MAX HP (NO SCALABLE BOONS)', '#ef4444'));
+        }
         sound.playBoonChime();
-        gameState.particles.push(new FloatingText(player.x, player.y - 40, '+50 BASE MAX HP (NO SCALABLE BOONS)', '#ef4444'));
         document.getElementById('pom-modal').style.display = 'none';
         gameState.isPaused = false;
         updateHUD();
@@ -356,6 +364,7 @@
       // Pick up to 3 player boons to level up
       const pool = preferredIds ? scalable.filter(boon => preferredIds.includes(boon.id)) : scalable;
       const upgradeable = shuffled(pool.length ? pool : scalable).slice(0, 3);
+      const canClaimReward = typeof learningRewardGuard === 'function' ? learningRewardGuard() : () => true;
       let chosen = false;
 
       upgradeable.forEach(boon => {
@@ -373,7 +382,7 @@
           <div class="boon-card-slot">${pomUpgradeDescription(boon, curLvl)}<br>Next: ${pomUpgradeDescription(boon, nextLvl)}</div>
         `;
         card.onclick = () => {
-          if (chosen) return;
+          if (chosen || !canClaimReward()) return;
           chosen = true;
           boon.level = nextLvl;
           modal.style.display = 'none';
@@ -406,13 +415,16 @@
       const godKeys = Object.keys(GODS);
       const randomGod = godKeys[Math.floor(Math.random() * godKeys.length)];
 
+      const learningShop = typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED;
+      const rewardNote = learningShop ? (learningBoonRank() === 0 ? 'Fractured: +1 maximum life only, no healing or boon levels.' : learningBoonLabel() + ': Lv ' + learningBoonRank() + ' scalable boon / +' + learningBoonRank() + ' Pom levels. Utility boon: +' + learningBoonRank()*5 + ' maximum life.') : '';
       const shopItems = [
-        { name: `${GODS[randomGod].name} Divine Blessing`, desc: 'Receive a random rare boon from Olympus.', cost: 140, type: 'god', godKey: randomGod },
-        { name: 'Pom of Power Slice', desc: 'Upgrade one of your equipped boons by +1 Level.', cost: 95, type: 'pom' },
+        { name: `${GODS[randomGod].name} Divine Blessing`, desc: rewardNote || 'Receive a random rare boon from Olympus.', cost: 140, type: 'god', godKey: randomGod },
+        { name: 'Pom of Power Slice', desc: rewardNote || 'Upgrade one of your equipped boons by +1 Level.', cost: 95, type: 'pom' },
         { name: 'Underworld Gyros & Nectar', desc: 'Restore 75 Health instantly to Melinoë.', cost: 70, type: 'heal' },
-        { name: 'Centaur Heart Vessel', desc: 'Gain +35 maximum Health for this run.', cost: 120, type: 'heart' }
+        { name: 'Centaur Heart Vessel', desc: learningShop ? '+' + learningMaxLifeReward('shopHeart') + ' maximum life for this run (no healing).' : 'Gain +35 maximum Health for this run.', cost: 120, type: 'heart' }
       ];
 
+      const canClaimReward = typeof learningRewardGuard === 'function' ? learningRewardGuard() : () => true;
       const purchased = new Set();
       const refreshShop = () => { modal.style.display = 'flex'; gameState.isPaused = true; };
       shopItems.forEach(item => {
@@ -428,7 +440,7 @@
           <div class="boon-card-slot" style="color:#fde047; font-weight:700;">🪙 ${item.cost} Gold Obols</div>
         `;
         card.onclick = () => {
-          if (purchased.has(item.type)) return;
+          if (purchased.has(item.type) || !canClaimReward()) return;
           if (gameState.gold >= item.cost) {
             purchased.add(item.type);
             gameState.gold -= item.cost;
@@ -448,7 +460,8 @@
               sound.playBoonChime();
               updateHUD();
             } else if (item.type === 'heart') {
-              gainHealth(35, true);
+              if (learningShop) applyLearningMaxLife(learningMaxLifeReward('shopHeart'));
+              else gainHealth(35, true);
               sound.playBoonChime();
               updateHUD();
             }
