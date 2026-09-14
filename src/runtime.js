@@ -185,7 +185,10 @@
     }
     window.addEventListener('pointerup', releasePointer); window.addEventListener('pointercancel', releasePointer);
     canvas.addEventListener('lostpointercapture', releasePointer); canvas.addEventListener('contextmenu', event => event.preventDefault());
-    window.addEventListener('blur', () => pauseRuntime('away'));
+    window.addEventListener('blur', () => {
+      if (typeof learningIsWaiting === 'function' && learningIsWaiting()) { resetRuntimeInput(); sound.stopBGM(); }
+      else pauseRuntime('away');
+    });
     document.addEventListener('visibilitychange', () => { if (document.hidden) pauseRuntime('away'); });
 
     function installRuntimeControls() {
@@ -194,7 +197,7 @@
         <div id="runtime-toolbar"><button id="runtime-pause" type="button" aria-label="Pause game and open settings">Ⅱ <span>Pause</span></button></div>
         <section id="runtime-overlay" role="dialog" aria-modal="true" aria-labelledby="runtime-title">
           <div class="runtime-panel">
-            <div class="runtime-eyebrow">CHRONOS FALL · UNDERWORLD ODYSSEY</div><h1 id="runtime-title">Defy the Titan of Time</h1>
+            <div class="runtime-eyebrow">CHRONOS FALL · UNDERWORLD ODYSSEY · v2.1.0</div><h1 id="runtime-title">Defy the Titan of Time</h1>
             <p id="runtime-description">Descend through shifting chambers, forge a divine build and challenge the endless depths beyond Chronos.</p>
             <div class="runtime-help"><span><b>MOVE</b> WASD / Arrows</span><span><b>STRIKE</b> Hold click / J</span><span><b>SPECIAL</b> Right click / K</span><span><b>DASH</b> Space / Shift</span><span><b>CAST</b> Q / E</span><span><b>HEX</b> F when charged</span></div>
             <p class="runtime-touch-hint">Touch: move with the left pad and use the ability buttons. Attacks aim at the nearest foe.</p>
@@ -224,7 +227,7 @@
       document.getElementById('runtime-pause').onclick = () => pauseRuntime();
       document.getElementById('runtime-start').onclick = () => {
         if (!gameRuntime.ready) return;
-        if (!gameRuntime.started) { gameRuntime.started = true; player.resetForRun(); startChamber(1); gameState.isPaused = false; }
+        if (!gameRuntime.started) { startHadesRun(); return; }
         resumeRuntime();
       };
       const overlay = document.getElementById('runtime-overlay');

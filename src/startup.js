@@ -1,7 +1,8 @@
     installRuntimeControls();
+    installHadesLearning();
     gameState.isPaused = true;
     // Combat waits for an explicit start and settled image loads.
-    assetsReady.then(() => {
+    Promise.all([assetsReady, attackSvgArt.ready]).then(() => {
       gameRuntime.ready = true;
       const start = document.getElementById('runtime-start');
       start.disabled = false; start.textContent = 'Enter the underworld';

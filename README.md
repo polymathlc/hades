@@ -25,7 +25,7 @@ Ashes, permanent Altar upgrades, and the highest chamber reached are saved in th
 
 ## Development
 
-The source lives in `src/`. `generate_game.py` combines the ordered JavaScript files, styles, HTML template, and 19 WebP assets into the standalone `index.html` published by GitHub Pages. Do not edit the generated HTML directly.
+The source lives in `src/`. `generate_game.py` combines the ordered JavaScript files, styles, HTML template, and 16 WebP actor/scenery assets and authored SVG combat layers into the standalone `index.html` published by GitHub Pages. Do not edit the generated HTML directly.
 
 Requires Python 3.10+ and Node.js 24 for development checks. The deployed game does not require a server runtime or AI service.
 
@@ -51,3 +51,15 @@ The browser checks exercise the generated release, including desktop and touch c
 - Cached scenery, bounded simulation catch-up, and browser regression checks in GitHub Actions.
 
 The performance checks record the measured browser timings; achievable frame rates still depend on the device, browser, and display.
+
+## Release 2.1.0: SVG combat and learning beta
+
+Every strike combo, special projectile, cast, elemental effect and enemy warning now uses authored SVG layers, decoded once before play. Engraved crescents, branching lightning, flame curls, crystalline ice and ritual seals animate from simulation time. Three obsolete raster effect sheets are no longer bundled.
+
+The Math and Science admin betas embed this same generated game as `hades-game.html?learning=1&subject=math` (or `science`). The same-origin authenticated portal owns question selection and marking through `learning-parent.js` (copied to each portal as `hades-learning-parent.js`). The standalone game remains available without the learning parameter. A learning URL opened outside its portal cannot bypass the checkpoint.
+
+At every exit gate, the game pauses for exactly five distinct, suitable question-bank MCQs. Each correct answer heals 8% of maximum life: 0–1 correct gives Common, 2–3 Rare, 4 Epic, and 5 Heroic. These grant level 1/2/3/4 for the next scalable boon, or add 1/2/3/4 levels to a Pom choice. Unique utility effects explicitly retain fixed strength. Embedded rounds no longer award automatic room-clear healing; other acquired healing abilities still work.
+
+Question selection is grade-first, mastery-aware, randomized within the suitable pool and excludes recent families and questionable content without AI calls. Missing or broken questions block advancement with retry and exit controls. Private answers stay in the parent, and only a validated five-answer score reaches the child. Session/round guards prevent repeated healing; permanent game progress is isolated by subject, account and preview grade.
+
+Tests include real parent/iframe checkpoints, five-question grading, actual healing and boon damage, denied advancement, new profiles, protocol replay, SVG coverage and bounded combat effects.

@@ -335,10 +335,14 @@
     };
 
     // Only permanent resources are stored. A new run never inherits old combat state.
-    const PROGRESS_STORAGE_KEY = 'chronos-fall-progress-v1';
+    function progressStorageKey() {
+      return typeof learningStorageKey === 'function' ? learningStorageKey() : 'chronos-fall-progress-v1';
+    }
     function loadPermanentProgress() {
       try {
-        const saved = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
+        const storageKey = progressStorageKey();
+        if (!storageKey) return;
+        const saved = JSON.parse(localStorage.getItem(storageKey));
         if (!saved || saved.version !== 1) return;
         const integer = (value, fallback, limit) => Number.isSafeInteger(value) && value >= 0 && value <= limit ? value : fallback;
         gameState.ashes = integer(saved.ashes, 10, 100000000);
@@ -351,7 +355,9 @@
     }
     function savePermanentProgress() {
       try {
-        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify({
+        const storageKey = progressStorageKey();
+        if (!storageKey) return;
+        localStorage.setItem(storageKey, JSON.stringify({
           version: 1, ashes: gameState.ashes, bones: gameState.bones,
           bestChamber: gameState.bestChamber, upgrades: gameState.upgrades
         }));

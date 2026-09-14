@@ -244,14 +244,5 @@
       }
     }
     function drawBoonEffects(ctx) {
-      for (const area of gameState.boonAreas || []) {
-        ctx.save(); ctx.globalAlpha = Math.min(0.35, area.remaining * 0.4);
-        ctx.fillStyle = area.type === 'firestorm' ? '#fb923c' : area.type === 'vortex' ? '#38bdf8' : '#fb7185';
-        ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(area.x,area.y,area.radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore();
-      }
-      if (hasBoon('selene_orbit')) {
-        const time=boonState().time || 0;
-        ctx.save(); ctx.fillStyle='#ddd6fe'; ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=4;
-        ctx.beginPath(); ctx.arc(player.x+Math.cos(time*2.2)*86,player.y+Math.sin(time*2.2)*86,14,0,Math.PI*2); ctx.fill();ctx.stroke();ctx.restore();
-      }
+      drawSvgBoonEffects(ctx);
     }

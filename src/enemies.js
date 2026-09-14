@@ -588,6 +588,7 @@
           if (Math.hypot(player.x - this.x, player.y - this.y) < 140) player.takeDamage(90, this);
           gameState.particles.push(new Shockwave(this.x, this.y, 180, '#facc15'));
         } else if (this.telegraphType === 'circle' || this.telegraphType === 'slam') {
+          gameState.particles.push(new Shockwave(this.x, this.y, this.telegraphParam, '#dc2626'));
           sound.playSlash();
           createScreenShake(6);
           if (distToPlayer <= this.telegraphParam + player.radius) {
@@ -637,6 +638,7 @@
           for (let step = 0; step < 20; step++) {
             this.moveWithCollision(Math.cos(this.telegraphAngle) * rushDist / 20, Math.sin(this.telegraphAngle) * rushDist / 20);
           }
+          gameState.particles.push(new Shockwave(this.x, this.y, 70, '#dc2626'));
           if (Math.hypot(player.x - this.x, player.y - this.y) < 70) player.takeDamage(65, this);
           createScreenShake(12);
         } else if (this.telegraphType === 'earthquake') {
@@ -797,41 +799,7 @@
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        if (this.isTelegraphing) {
-          const progress = 1 - this.telegraphTimer / this.telegraphMax;
-          const targetRadii = { mortar: 80, eruption: 80, boss_leap_slam: 150, cerberus_pounce: 160, thanatos_teleport_slash: 130, chronos_blitz: 140 };
-          const areaRadii = { nyx_gravity_well: 320, tartarus_ground_shatter: 260, thanatos_reaper_cleave: 220, medusa_gaze_petrify: 320, chaos_singularity_blackhole: 400, hydra_slam: 200, hecate_polymorph: 240, boss_scythe: 200 };
-          const fanTypes = ['fan', 'poison_fan', 'flame_cone', 'hydra_barrage', 'cerberus_magma_breath', 'typhon_magma_eruption', 'nyx_darkness_beam', 'prometheus_solar_slash', 'charon_tsunami_surge', 'line'];
-          ctx.save();
-          ctx.strokeStyle = '#ffb4a9';
-          ctx.fillStyle = 'rgba(239,68,68,' + (0.1 + progress * 0.25) + ')';
-          ctx.lineWidth = 3;
-          if (targetRadii[this.telegraphType]) {
-            ctx.translate(this.telegraphTarget.x - this.x, this.telegraphTarget.y - this.y);
-          }
-          ctx.beginPath();
-          if (this.telegraphType === 'rush') {
-            ctx.rotate(this.telegraphAngle);
-            ctx.rect(0, -40, Math.min(380, this.telegraphParam), 80);
-          } else if (fanTypes.includes(this.telegraphType)) {
-            ctx.rotate(this.telegraphAngle);
-            ctx.moveTo(0, 0);
-            ctx.arc(0, 0, this.telegraphParam, -0.9, 0.9);
-            ctx.closePath();
-          } else {
-            const radius = targetRadii[this.telegraphType] || areaRadii[this.telegraphType] || this.telegraphParam;
-            ctx.arc(0, 0, radius, 0, Math.PI * 2);
-          }
-          ctx.fill();
-          ctx.stroke();
-          ctx.setLineDash([7, 7]);
-          ctx.strokeStyle = '#fff0d1';
-          ctx.beginPath();
-          ctx.arc(0, 0, 14 + progress * 18, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
-        }
-        if (this.isBurrowed) { ctx.restore(); return; }
+        drawSvgEnemyTelegraph(ctx, this);
 
         // Ambient Aura
         ctx.beginPath();

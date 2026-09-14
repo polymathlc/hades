@@ -133,37 +133,17 @@
 
       draw(ctx) {
         if (this.destroyed) return;
-        const friendly = this.owner === player;
-        const colors = { poison_dart: '#b7f584', frost_shard: '#a5eaff', magma_ball: '#ffb676',
-          bouncing_acid: '#c1f589', doom_skull: '#e4bbff', clockwork_bomb: '#ffe092',
-          charm_heart: '#ffa9cf', whirling_blade: '#e5dcce', witch_orb: '#e8b3f7' };
-        const color = friendly ? '#bcfff0' : (colors[this.type] || '#ffb3a5');
-        const speed = Math.hypot(this.vx, this.vy), direction = Math.atan2(this.vy, this.vx);
-        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(direction);
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = friendly ? '#68dccb44' : '#ffb9a43b'; ctx.lineWidth = this.radius * 1.1;
-        ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(-Math.min(36, speed * 0.055), 0); ctx.stroke();
-        ctx.strokeStyle = '#080e21'; ctx.lineWidth = 4;
-        if (this.type === 'moon_sickle') {
-          ctx.rotate(this.angle - direction);
-          ctx.fillStyle = '#83dec9'; ctx.beginPath();
-          ctx.arc(0, 0, this.radius, -Math.PI * 0.65, Math.PI * 0.65);
-          ctx.bezierCurveTo(-12, 10, -12, -10, Math.cos(-Math.PI * 0.65) * this.radius, Math.sin(-Math.PI * 0.65) * this.radius);
-          ctx.closePath(); ctx.stroke(); ctx.fill();
-          ctx.strokeStyle = '#e1fff7'; ctx.lineWidth = 2; ctx.beginPath();
-          ctx.arc(0, 0, this.radius, -Math.PI * 0.65, Math.PI * 0.65); ctx.stroke();
-        } else if (this.type === 'poison_dart' || this.type === 'frost_shard' || this.type === 'whirling_blade') {
-          ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(this.radius, 0);
-          ctx.lineTo(-this.radius, -this.radius * 0.58); ctx.lineTo(-this.radius * 0.4, 0);
-          ctx.lineTo(-this.radius, this.radius * 0.58); ctx.closePath(); ctx.stroke(); ctx.fill();
-          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-this.radius * 0.3, 0); ctx.lineTo(this.radius * 0.75, 0); ctx.stroke();
-        } else {
-          ctx.fillStyle = '#421b2f'; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
-          ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-          ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.62, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#fff6e1'; ctx.beginPath(); ctx.arc(2, -2, this.radius * 0.24, 0, Math.PI * 2); ctx.fill();
+        const friendly=this.owner===player, direction=Math.atan2(this.vy,this.vx), reduced=gameRuntime.settings.reducedMotion;
+        const speed=Math.hypot(this.vx,this.vy), trail=Math.min(48,16+speed*.04);
+        attackSvgArt.draw(ctx,friendly?'comet-tail':'enemy-tail',this.x-Math.cos(direction)*trail*.48,this.y-Math.sin(direction)*trail*.48,trail,this.radius*1.3,direction,.65);
+        const key=attackSvgArt.projectileTypes.includes(this.type)?this.type:'witch_orb';
+        const spin=['moon_sickle','whirling_blade','clockwork_bomb','witch_orb'].includes(this.type);
+        const angle=spin ? (reduced?0:this.angle*.55) : direction;
+        attackSvgArt.draw(ctx,key,this.x,this.y,this.radius*2.35,this.radius*2.35,angle);
+        if (this.type==='moon_sickle' && friendly && hasBoon('hestia_special')) {
+          const frame=reduced?1:Math.floor(this.angle*1.5)%4;
+          attackSvgArt.draw(ctx,'flame-'+frame,this.x,this.y,this.radius*1.3,this.radius*1.3,direction+Math.PI/2,.64);
         }
-        ctx.restore();
       }
     }
 
@@ -185,37 +165,11 @@
         this.frame = Math.min(3, Math.floor(progress * 4));
       }
       draw(ctx) {
-        const progress = Math.max(0, Math.min(1, 1 - this.life / this.maxLife));
-        const colors = [['zeus_strike', '#8ee5ff'], ['hestia_strike', '#ffb17d'],
-          ['poseidon_strike', '#6ccfeb'], ['apollo_strike', '#ffe49a'], ['demeter_strike', '#c4f4ff'],
-          ['ares_strike', '#ff8e95'], ['aphrodite_strike', '#ffacd9'], ['hephaestus_strike', '#ffc58d']];
-        const color = (colors.find(([boon]) => hasBoon(boon)) || ['', '#98ffe2'])[1];
-        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
-        ctx.globalAlpha = Math.max(0, 1 - progress * 0.85); ctx.lineCap = 'round';
-        if (this.combo === 2) {
-          const reach = this.range * (0.4 + progress * 0.6);
-          ctx.fillStyle = color + '44'; ctx.beginPath(); ctx.moveTo(0, -14);
-          ctx.lineTo(reach, 0); ctx.lineTo(0, 14); ctx.closePath(); ctx.fill();
-          ctx.strokeStyle = color; ctx.lineWidth = 5 * (1 - progress) + 1;
-          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(reach, 0); ctx.stroke();
-          ctx.strokeStyle = '#f0fff9'; ctx.lineWidth = 1.5; ctx.stroke();
-        } else {
-          const fullCircle = this.combo === 3, reach = this.range * (fullCircle ? 0.5 + progress * 0.5 : 1);
-          const span = fullCircle ? Math.PI * 2 : Math.PI * 0.92;
-          const start = fullCircle ? -Math.PI / 2 : -span / 2;
-          if (this.combo === 1) ctx.scale(1, -1);
-          ctx.fillStyle = color + '19'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, reach, start, start + span); ctx.closePath(); ctx.fill();
-          for (let i = 0; i < 3; i++) {
-            ctx.strokeStyle = i === 0 ? '#eefff8' : color;
-            ctx.globalAlpha = (1 - progress * 0.85) * (1 - i * 0.3);
-            ctx.lineWidth = i === 0 ? 2 : 4;
-            ctx.beginPath(); ctx.arc(0, 0, reach - i * 9, start + progress * span * 0.5, start + span); ctx.stroke();
-          }
-          ctx.fillStyle = '#f0fff9'; ctx.globalAlpha = 1 - progress;
-          const tip = start + span;
-          ctx.beginPath(); ctx.arc(Math.cos(tip) * reach, Math.sin(tip) * reach, 3, 0, Math.PI * 2); ctx.fill();
-        }
-        ctx.restore();
+        const progress=Math.max(0,Math.min(1,1-this.life/this.maxLife));
+        const theme=attackSvgArt.activeTheme(), finisher=this.combo===3;
+        const grow=this.combo===2 ? .65+progress*.35 : finisher ? .5+progress*.5 : 1;
+        const diameter=this.range*2/.96*grow;
+        attackSvgArt.draw(ctx,'sweep-'+this.combo+'-'+theme,this.x,this.y,diameter,diameter,this.angle,1-progress*.8);
       }
     }
 
@@ -231,18 +185,8 @@
         this.life -= dt;
       }
       draw(ctx) {
-        const fade = Math.max(0, this.life / this.maxLife), reach = 10 + (1 - fade) * 19;
-        ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = fade;
-        ctx.strokeStyle = this.color; ctx.lineWidth = 2; ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const angle = i * Math.PI / 3;
-          ctx.moveTo(Math.cos(angle) * reach * 0.45, Math.sin(angle) * reach * 0.45);
-          ctx.lineTo(Math.cos(angle) * reach, Math.sin(angle) * reach);
-        }
-        ctx.stroke(); ctx.fillStyle = '#fff4dc'; ctx.beginPath();
-        ctx.moveTo(0, -8 * fade); ctx.lineTo(3 * fade, -3 * fade); ctx.lineTo(8 * fade, 0);
-        ctx.lineTo(3 * fade, 3 * fade); ctx.lineTo(0, 8 * fade); ctx.lineTo(-3 * fade, 3 * fade);
-        ctx.lineTo(-8 * fade, 0); ctx.lineTo(-3 * fade, -3 * fade); ctx.closePath(); ctx.fill(); ctx.restore();
+        const fade=Math.max(0,this.life/this.maxLife), diameter=18+(1-fade)*40;
+        attackSvgArt.draw(ctx,'spark-'+attackSvgArt.themeForColor(this.color),this.x,this.y,diameter,diameter,0,fade);
       }
     }
 
@@ -261,21 +205,14 @@
         this.frame = Math.min(3, Math.floor(progress * 4));
       }
       draw(ctx) {
-        const fade = Math.max(0, this.life / this.maxLife);
-        ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = fade; ctx.lineJoin = 'miter';
-        ctx.beginPath(); ctx.moveTo(-this.size * 0.08, -this.size);
-        ctx.lineTo(this.size * 0.08, -this.size * 0.62); ctx.lineTo(-this.size * 0.12, -this.size * 0.57);
-        ctx.lineTo(this.size * 0.07, -this.size * 0.27); ctx.lineTo(-this.size * 0.06, -this.size * 0.29); ctx.lineTo(0, 0);
-        ctx.strokeStyle = '#7edbff55'; ctx.lineWidth = 12; ctx.stroke();
-        ctx.strokeStyle = '#a5eaff'; ctx.lineWidth = 4; ctx.stroke();
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.strokeStyle = '#a5eaff'; ctx.lineWidth = 2; ctx.beginPath();
-        ctx.ellipse(0, 0, 8 + (1 - fade) * this.size * 0.28, 5 + (1 - fade) * this.size * 0.12, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+        const fade=Math.max(0,this.life/this.maxLife), frame=gameRuntime.settings.reducedMotion?1:this.frame;
+        attackSvgArt.draw(ctx,'lightning-'+frame,this.x,this.y-this.size*.44,this.size*.85,this.size*1.1,0,fade);
       }
     }
 
     class AnimatedFireExplosion {
-      constructor(x, y, size = 100) {
+      constructor(x, y, size = 100, artKind = 'fire') {
+        this.artKind = artKind;
         this.x = x;
         this.y = y;
         this.size = size;
@@ -289,18 +226,13 @@
         this.frame = Math.min(3, Math.floor(progress * 4));
       }
       draw(ctx) {
-        const fade = Math.max(0, this.life / this.maxLife), radius = this.size * (0.12 + (1 - fade) * 0.4);
-        ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = fade;
-        ctx.fillStyle = '#ffb97520'; ctx.strokeStyle = '#ffae73'; ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let i = 0; i < 24; i++) {
-          const angle = i * Math.PI / 12, r = radius * (i % 2 === 0 ? 1 : 0.66);
-          if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-          else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+        const fade=Math.max(0,this.life/this.maxLife), diameter=this.size*(.42+(1-fade)*.78);
+        const key=this.artKind==='cast'?'cast-burst':'fire-bloom';
+        attackSvgArt.draw(ctx,key,this.x,this.y,diameter,diameter,gameRuntime.settings.reducedMotion?0:(1-fade)*.3,fade);
+        if(this.artKind!=='cast') {
+          const frame=gameRuntime.settings.reducedMotion?1:this.frame;
+          attackSvgArt.draw(ctx,'flame-'+frame,this.x,this.y-this.size*.12,this.size*.55,this.size*.7,0,fade*.8);
         }
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.strokeStyle = '#fff0c2'; ctx.lineWidth = 3 * fade + 1; ctx.beginPath(); ctx.arc(0, 0, radius * 0.65, 0, Math.PI * 2); ctx.stroke();
-        ctx.restore();
       }
     }
 
@@ -320,13 +252,8 @@
         this.frame = Math.min(3, Math.floor(progress * 4));
       }
       draw(ctx) {
-        const fade = Math.max(0, this.life / this.maxLife), offset = (1 - fade) * this.size * 0.4;
-        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.lineCap = 'round';
-        for (let i = 0; i < 3; i++) {
-          ctx.globalAlpha = fade * (1 - i * 0.23); ctx.strokeStyle = i === 0 ? '#c8fbff' : '#71cde9'; ctx.lineWidth = 3 - i * 0.7;
-          ctx.beginPath(); ctx.arc(offset - i * 13, 0, this.size * 0.46, -Math.PI * 0.43, Math.PI * 0.43); ctx.stroke();
-        }
-        ctx.restore();
+        const fade=Math.max(0,this.life/this.maxLife), offset=(1-fade)*this.size*.25;
+        attackSvgArt.draw(ctx,'water-wave',this.x+Math.cos(this.angle)*offset,this.y+Math.sin(this.angle)*offset,this.size,this.size,this.angle,fade);
       }
     }
 
@@ -348,13 +275,8 @@
         this.life -= dt;
       }
       draw(ctx) {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        const fade=Math.max(0,this.life/this.maxLife);
+        attackSvgArt.draw(ctx,this.type==='ghost'?'comet-tail':'mote-'+attackSvgArt.themeForColor(this.color),this.x,this.y,this.size*2.4,this.size*2.4,this.type==='ghost'?player.angle:0,fade);
       }
     }
 
@@ -373,14 +295,7 @@
         this.radius += (this.maxRadius / this.maxLife) * dt;
       }
       draw(ctx) {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
+        attackSvgArt.draw(ctx,'shock-'+attackSvgArt.themeForColor(this.color),this.x,this.y,this.radius*2/.86,this.radius*2/.86,0,Math.max(0,this.life/this.maxLife));
       }
     }
 
@@ -397,20 +312,7 @@
         this.life -= dt;
       }
       draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.angle);
-        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
-        ctx.strokeStyle = '#c084fc';
-        ctx.lineWidth = 26;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(this.length, 0);
-        ctx.stroke();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 12;
-        ctx.stroke();
-        ctx.restore();
+        attackSvgArt.draw(ctx,'lunar-ray',this.x+Math.cos(this.angle)*this.length/2,this.y+Math.sin(this.angle)*this.length/2,this.length,64,this.angle,Math.max(0,this.life/this.maxLife));
       }
     }
 
@@ -429,14 +331,8 @@
         });
       }
       draw(ctx) {
-        ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = Math.min(0.8, Math.max(0, this.life));
-        ctx.fillStyle = '#ff9e6740'; ctx.beginPath(); ctx.ellipse(0, 4, 28, 14, 0, 0, Math.PI * 2); ctx.fill();
-        for (let i = -1; i <= 1; i++) {
-          ctx.fillStyle = i === 0 ? '#ffd49b' : '#e58261'; ctx.beginPath();
-          ctx.moveTo(i * 12 - 5, 5); ctx.quadraticCurveTo(i * 12 - 11, -5, i * 12 + 2, -18 - (i === 0 ? 9 : 0));
-          ctx.quadraticCurveTo(i * 12 - 1, -3, i * 12 + 6, 3); ctx.closePath(); ctx.fill();
-        }
-        ctx.restore();
+        const frame=gameRuntime.settings.reducedMotion?1:Math.floor((2-this.life)*8)%4;
+        attackSvgArt.draw(ctx,'flame-'+Math.max(0,frame),this.x,this.y-7,65,65,0,Math.min(.85,Math.max(0,this.life)));
       }
     }
 
@@ -457,15 +353,7 @@
         });
       }
       draw(ctx) {
-        ctx.save(); ctx.translate(this.x, this.y); ctx.globalAlpha = Math.min(1, Math.max(0, this.life));
-        ctx.fillStyle = '#83d1ed26'; ctx.strokeStyle = '#90d7edaa'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.ellipse(0, 4, 26, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        for (let i = -1; i <= 1; i++) {
-          ctx.fillStyle = i === 0 ? '#c2f3ff' : '#72b8d3'; ctx.beginPath();
-          ctx.moveTo(i * 10 - 4, 6); ctx.lineTo(i * 10 + 2, -17 - (i === 0 ? 12 : 0));
-          ctx.lineTo(i * 10 + 6, 3); ctx.closePath(); ctx.fill();
-        }
-        ctx.restore();
+        attackSvgArt.draw(ctx,'ice-trap',this.x,this.y-7,65,65,0,Math.min(1,Math.max(0,this.life)));
       }
     }
 
@@ -485,12 +373,7 @@
         });
       }
       draw(ctx) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.3)';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 80, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        attackSvgArt.draw(ctx,'charm-bloom',this.x,this.y,180,180,gameRuntime.settings.reducedMotion?0:(.5-this.life)*.35,Math.max(0,Math.min(.7,this.life*2)));
       }
     }
 
