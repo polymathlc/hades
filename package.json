@@ -1,0 +1,15 @@
+{
+  "name": "chronos-fall",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "python generate_game.py",
+    "check:build": "python generate_game.py --check",
+    "test": "node --test tools/*.test.mjs && node tools/test-gameplay.cjs",
+    "test:browser": "node tools/browser-check.mjs && node tools/runtime-browser-check.mjs && node tools/graphics-check.mjs && node tools/stress-check.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
