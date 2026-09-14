@@ -112,7 +112,8 @@
         if (Math.hypot(player.x - door.x, player.y - door.y) >= door.radius + player.radius) continue;
         const reward = door.reward, nextChamber = gameState.chamber + 1;
         gameState.doors = []; resetRuntimeInput();
-        if (reward.type === 'god') openGodBoonModal(reward.godKey, () => startChamber(nextChamber));
+        if (typeof continueThroughHadesGate === 'function') continueThroughHadesGate(reward, nextChamber);
+        else if (reward.type === 'god') openGodBoonModal(reward.godKey, () => startChamber(nextChamber));
         else if (reward.type === 'pom') openPomModal(() => startChamber(nextChamber));
         else startChamber(nextChamber, reward);
         break;

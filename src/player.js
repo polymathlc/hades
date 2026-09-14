@@ -446,7 +446,7 @@
           }
         });
 
-        gameState.particles.push(new AnimatedFireExplosion(this.castActive.x, this.castActive.y, radius * 1.1));
+        gameState.particles.push(new AnimatedFireExplosion(this.castActive.x, this.castActive.y, radius * 1.1, 'cast'));
         this.castActive = null;
       }
 
@@ -634,33 +634,10 @@
       }
 
       draw(ctx) {
-        drawBoonEffects(ctx);
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        // Cast Circle Draw
-        if (this.castActive) {
-          ctx.save();
-          const cleanFx = loadedImages['clean_fx'];
-          if (cleanFx && cleanFx.complete && cleanFx.naturalWidth > 0) {
-            ctx.save();
-            ctx.translate(this.castActive.x - this.x, this.castActive.y - this.y);
-            // Rotation advances with the simulation and stays still while paused.
-            ctx.rotate(this.castActive.angle);
-            const sw = cleanFx.width / 2;
-            const sh = cleanFx.height;
-            const rad = this.castActive.radius;
-            ctx.drawImage(cleanFx, 0, 0, sw, sh, -rad, -rad, rad * 2, rad * 2);
-            ctx.restore();
-          } else {
-            ctx.beginPath();
-            ctx.arc(this.castActive.x - this.x, this.castActive.y - this.y, this.castActive.radius, 0, Math.PI * 2);
-            ctx.strokeStyle = '#b356ff';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-          }
-          ctx.restore();
-        }
+        drawSvgCast(ctx, this.castActive, this.x, this.y);
 
         // Character glowing aura
         ctx.beginPath();

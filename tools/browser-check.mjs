@@ -14,7 +14,7 @@ await withBrowser(async ({browser, url, root}) => {
   await check('assets load before combat and welcome screen is usable', async () => {
     assert.equal(await page.locator('#runtime-overlay').isVisible(), true);
     assert.equal(await page.evaluate(() => runtimeCanPlay()), false);
-    assert.equal(await page.evaluate(() => Object.values(loadedImages).filter(i => i.naturalWidth > 0).length), 19);
+    assert.equal(await page.evaluate(() => Object.values(loadedImages).filter(i => i.naturalWidth > 0).length), 16);
     await page.screenshot({path: path.join(out, 'welcome-desktop.png')});
     await page.locator('#runtime-start').click();
     await page.waitForFunction(() => gameRuntime.started && !gameState.isPaused);

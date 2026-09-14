@@ -215,7 +215,7 @@
       gameState.projectiles = [];
       const flawless = gameState.roomDamageTaken === 0;
       const heal = gameState.chamberType === 'boss' || gameState.chamberType === 'miniboss' ? 30 : 4;
-      gainHealth(heal);
+      if (typeof HADES_LEARNING_ENABLED === 'undefined' || !HADES_LEARNING_ENABLED) gainHealth(heal);
       if (hasBoon('hephaestus_forge') && gameState.roomsCleared % 3 === 0) {
         gainHealth(15 * boonPower('hephaestus_forge'), true);
         gameState.particles.push(new FloatingText(player.x, player.y - 95, 'DIVINE FORGE • MAX HEALTH UP', '#fb923c'));
@@ -291,14 +291,17 @@
       }
       let chosen = false;
       choices.forEach(boon => {
+        const rewardLevel = POM_UPGRADE_EFFECTS[boon.id] && typeof learningBoonRank === 'function' ? learningBoonRank() : 1;
         const card = document.createElement('button');
         card.type = 'button';
         card.className = `boon-card ${boon.isDuo ? 'duo-card' : ''}`;
         card.innerHTML = `
           <div>
-            <div class="boon-rarity">${boon.isDuo ? '★ LEGENDARY DUO ★' : 'RARE BOON'}</div>
+            <div class="boon-rarity">${typeof learningBoonLabel === 'function' && HADES_LEARNING_ENABLED ? learningBoonLabel() : boon.isDuo ? '★ LEGENDARY DUO ★' : 'RARE BOON'}</div>
             <div class="boon-card-name">${boon.name}</div>
             <div class="boon-card-desc">${boon.desc}</div>
+            ${rewardLevel > 1 ? `<div class="boon-card-desc">Lv ${rewardLevel}: ${pomUpgradeDescription(boon, rewardLevel)}</div>` : ''}
+            ${typeof HADES_LEARNING_ENABLED !== 'undefined' && HADES_LEARNING_ENABLED && !POM_UPGRADE_EFFECTS[boon.id] ? '<div class="boon-card-desc">Unique effect · fixed strength</div>' : ''}
           </div>
           <div class="boon-card-slot">${boon.isDuo ? `Synergy: ${boon.gods.join(' + ')}` : boon.slot === 'Hex' ? 'Hex ability • replaces your current Hex' : `Slot: ${boon.slot}`}</div>
         `;
@@ -307,7 +310,7 @@
           chosen = true;
           // Hexes are alternative ultimate abilities. A new Hex replaces the old one.
           if (boon.slot === 'Hex') gameState.equippedBoons = gameState.equippedBoons.filter(owned => owned.slot !== 'Hex');
-          gameState.equippedBoons.push({ ...boon, level: 1, godName: boon.isDuo ? boon.gods.join(' & ') : god.name });
+          gameState.equippedBoons.push({ ...boon, level: rewardLevel, tier: typeof hadesLearning !== 'undefined' && hadesLearning.enabled ? hadesLearning.tier : 'rare', godName: boon.isDuo ? boon.gods.join(' & ') : god.name });
           if (boon.id === 'hephaestus_armor') { player.maxHp += 50; player.hp += 50; }
           if (boon.id === 'hephaestus_shield') player.barrierHp = 40;
           modal.style.display = 'none';
@@ -357,13 +360,13 @@
 
       upgradeable.forEach(boon => {
         const curLvl = boon.level || 1;
-        const nextLvl = curLvl + 1;
+        const nextLvl = curLvl + (typeof learningBoonRank === 'function' ? learningBoonRank() : 1);
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'boon-card';
         card.innerHTML = `
           <div>
-            <div class="boon-rarity" style="color:#ef4444;">POM UPGRADE</div>
+            <div class="boon-rarity" style="color:#ef4444;">${typeof learningBoonLabel === 'function' && HADES_LEARNING_ENABLED ? learningBoonLabel() + ' · POM UPGRADE' : 'POM UPGRADE'}</div>
             <div class="boon-card-name">${boon.name} <span class="boon-lvl-badge">Lv ${curLvl} ➔ Lv ${nextLvl}</span></div>
             <div class="boon-card-desc">${boon.desc}</div>
           </div>
@@ -547,6 +550,7 @@
 
     document.getElementById('start-run-btn').onclick = () => {
       document.getElementById('altar-modal').style.display = 'none';
+      if (typeof startHadesRun === 'function') { startHadesRun(); return; }
       gameState.isPaused = false;
       player.resetForRun();
       startChamber(1);
