@@ -637,8 +637,6 @@
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        drawSvgCast(ctx, this.castActive, this.x, this.y);
-
         // Character glowing aura
         ctx.beginPath();
         ctx.arc(0, 0, 32, 0, Math.PI * 2);
