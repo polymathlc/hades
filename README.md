@@ -65,3 +65,7 @@ Heart gates grant 1/10/18/25/40/60 maximum life and ash gates grant 1/5/10/15/25
 Question selection is grade-first, mastery-aware, randomized within the suitable pool and excludes recent families and questionable content without AI calls. Missing or broken questions block advancement with retry and exit controls. Private answers stay in the parent, and only a validated five-answer score reaches the child. Session/round guards prevent repeated healing; permanent game progress is isolated by subject, account and preview grade.
 
 Tests include real parent/iframe checkpoints, five-question grading, actual healing and boon damage, denied advancement, new profiles, protocol replay, SVG coverage and bounded combat effects.
+
+## Release 2.1.2: Ground summoning circle
+
+Cast places a detailed SVG inscription on the floor: concentric engraved rings, varied runes, cardinal anchors and a geometric central sigil. The boundary matches the spell’s reach and stays fixed while the inner rune bands counter-rotate. Scenery and combat actors render above the cast and its circular detonation. Reduced motion freezes the rune animation.

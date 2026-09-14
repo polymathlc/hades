@@ -14,7 +14,7 @@
         constructor(values = []) { super(); this.counts = new Map(); this.cells = new Map(); for (const value of values) this.push(value); }
         key(effect) {
           const numeric = effect.constructor === FloatingText && (Number.isFinite(effect.damageTotal) || /^-?\d+(?:\.\d+)?$/.test(effect.text));
-          const shape = `${effect.combo ?? ''}:${effect.maxRadius ?? effect.size ?? ''}:${Math.round((effect.angle || 0) * 4)}`;
+          const shape = `${effect.artKind ?? ''}:${effect.combo ?? ''}:${effect.maxRadius ?? effect.size ?? ''}:${Math.round((effect.angle || 0) * 4)}`;
           return `${ids.get(effect.constructor)}:${Math.floor(effect.x / 48)}:${Math.floor(effect.y / 48)}:${effect.color || ''}:${numeric ? 'damage' : (effect.text || '')}:${shape}`;
         }
         push(...effects) {
@@ -71,6 +71,10 @@
       const margin = (projectile.radius || 24) + 48;
       return Math.abs(projectile.x - gameState.camera.x) <= canvas.width / 2 + margin &&
         Math.abs(projectile.y - gameState.camera.y) <= canvas.height / 2 + margin;
+    }
+    function isGroundEffect(effect) {
+      return effect instanceof FireTrail || effect instanceof IceShardTrap ||
+        (typeof AnimatedFireExplosion !== 'undefined' && effect instanceof AnimatedFireExplosion && effect.artKind === 'cast');
     }
     let lastTime = performance.now(), simulationDebt = 0, worldTime = 0;
     function resetFrameClock() { lastTime = performance.now(); simulationDebt = 0; }
@@ -145,14 +149,17 @@
       // A resize can make the previous camera offset invalid immediately.
       Object.assign(gameState.camera, clampedCameraTarget(gameState.camera.x, gameState.camera.y));
       ctx.translate(canvas.width / 2 - gameState.camera.x + shakeX, canvas.height / 2 - gameState.camera.y + shakeY);
-      drawChamberTiles(ctx); drawProps(ctx, worldTime);
+      drawChamberTiles(ctx);
+      // A cast is a world-anchored inscription: scenery and actors cover it.
+      if (typeof drawSvgCast === 'function') drawSvgCast(ctx, player.castActive);
+      for (const p of gameState.particles) if (isGroundEffect(p)) p.draw(ctx);
+      drawProps(ctx, worldTime);
       if (typeof drawCombatReadability === 'function') drawCombatReadability(ctx, worldTime);
       if (typeof drawBoonEffects === 'function') drawBoonEffects(ctx);
-      for (const p of gameState.particles) if (p instanceof FireTrail || p instanceof IceShardTrap) p.draw(ctx);
       for (const e of gameState.enemies) e.draw(ctx);
       player.draw(ctx);
       for (const p of gameState.projectiles) if (projectileIsVisible(p)) p.draw(ctx);
-      for (const p of gameState.particles) if (!(p instanceof FireTrail) && !(p instanceof IceShardTrap)) p.draw(ctx);
+      for (const p of gameState.particles) if (!isGroundEffect(p)) p.draw(ctx);
       ctx.restore();
       if (typeof drawScreenAtmosphere === 'function') drawScreenAtmosphere(ctx, worldTime);
       const workMs = performance.now() - workStarted; metrics.frames++;
