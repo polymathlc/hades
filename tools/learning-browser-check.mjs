@@ -54,29 +54,33 @@ try {
  await frame.locator('#boon-choices-container button').first().click();
  await frame.waitForFunction(()=>gameState.chamber===2);
  const earned=await frame.evaluate(()=>gameState.equippedBoons.at(-1));
- assert.equal(earned.level,4);assert.equal(earned.tier,'heroic');
- assert.equal(await frame.evaluate(id=>boonPower(id),earned.id),2.2);
+ assert.equal(earned.level,8);assert.equal(earned.tier,'heroic');
+ assert.ok(Math.abs(await frame.evaluate(id=>boonPower(id),earned.id)-3.8)<1e-8);
  assert.equal(await frame.evaluate(()=>runtimeCanPlay()),true,'parent quiz blur cannot strand the next chamber paused');
  assert.equal(await page.evaluate(()=>records.length),5);
  assert.equal(await page.evaluate(()=>messages.some(m=>JSON.stringify(m).includes('answer'))),false);
  console.log('PASS real iframe checkpoint: five grades, exact healing, Heroic damage and playable next chamber');
 
  // The next completed quiz replaces the tier. Zero answers right gives no heal
- // and only one real Pom level; missing banks/cancellation never advance.
+ // and only a one-point capacity fragment; existing boon strength is retained.
  await frame.evaluate(()=>{gameState.enemies=[];player.hp=30;continueThroughHadesGate({type:'pom'},3)});
  await page.locator('.hades-learning-overlay').waitFor();
  for(let i=0;i<5;i++){
   await page.locator('.hades-learning-option').nth(1).click();
   await page.getByRole('button',{name:i===4?'Claim sanctuary reward':'Next question',exact:true}).click();
  }
- await frame.locator('#pom-modal').waitFor({state:'visible'});
+ await frame.locator('#boon-modal').waitFor({state:'visible'});
  assert.equal(await frame.evaluate(()=>player.hp),30);
- assert.equal(await frame.evaluate(()=>hadesLearning.tier),'common');
- assert.match(await frame.locator('#pom-choices-container').innerText(),/Lv 4 ➔ Lv 5/i);
- await frame.locator('#pom-choices-container button').first().click();
+ assert.equal(await frame.evaluate(()=>hadesLearning.tier),'fractured');
+ assert.match(await frame.locator('#boon-choices-container').innerText(),/No healing, new boon or Pom levels/i);
+ const beforeFragment=await frame.evaluate(()=>player.maxHp);
+ await frame.locator('#boon-choices-container button').first().click();
  await frame.waitForFunction(()=>gameState.chamber===3);
+ assert.equal(await frame.evaluate(()=>player.maxHp),beforeFragment+1);
+ assert.equal(await frame.evaluate(()=>player.hp),30);
+ assert.equal(await frame.evaluate(()=>gameState.equippedBoons.at(-1).level),8);
  assert.equal(await page.evaluate(()=>new Set(shown).size),10);
- console.log('PASS zero-score checkpoint grants no life and the actual Common Pom upgrade');
+ console.log('PASS zero-score checkpoint grants only +1 maximum life, no healing or Pom levels');
 
  await frame.evaluate(()=>{gameState.enemies=[];continueThroughHadesGate({type:'gold'},4)});
  await page.locator('.hades-learning-overlay').waitFor();

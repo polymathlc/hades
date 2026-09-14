@@ -40,7 +40,7 @@ function fixture({enabled=true,iframe=true,subject='math'}={}) {
 
 test('five-answer reward table gives deterministic healing and boon tiers without AI',()=>{
   const f=fixture();
-  const tiers=['common','common','rare','rare','epic','heroic'];
+  const tiers=['fractured','common','uncommon','rare','epic','heroic'];
   for(let correct=0;correct<=5;correct++)assert.deepEqual(plain(f.context.learningRewardForScore(correct)),{correct,total:5,healPercent:correct*8,boonTier:tiers[correct]});
   for(const score of [-1,6,2.5,'5',null,undefined,NaN,Infinity])assert.equal(f.context.learningRewardForScore(score),null);
 });
@@ -107,7 +107,7 @@ test('each gate waits for exactly five correctly signed answers and rejects malf
   assert.equal(f.context.player.hp,40);assert.equal(f.calls.starts.length,1);assert.equal(f.calls.saves.length,0);assert.equal(f.context.state.round,0);
   assert.equal(f.context.gameState.isPaused,true);assert.ok(f.context.state.pending);
   f.receive(good);assert.equal(f.context.player.hp,80);assert.equal(f.calls.starts.length,2);assert.equal(f.context.state.round,1);assert.equal(f.context.state.pending,null);
-  assert.equal(f.context.learningBoonRank(),4);assert.match(f.context.learningBoonLabel(),/Heroic/);
+  assert.equal(f.context.learningBoonRank(),8);assert.match(f.context.learningBoonLabel(),/Heroic/);
 });
 
 test('life is healed by actual maximum-life percentage, capped, rounded, and reported accurately',()=>{
@@ -147,7 +147,7 @@ test('blocked question rounds and repeated retries preserve the same gate and re
 test('god and pom rewards open only after successful checkpoint completion',()=>{
   const f=fixture();f.connect();f.checkpoint({type:'god',godKey:'zeus'},2);
   assert.equal(f.calls.god.length,0);f.receive(f.result(4));assert.equal(f.calls.god.length,1);
-  assert.equal(f.calls.god[0].god,'zeus');assert.equal(f.context.learningBoonRank(),3);assert.equal(f.calls.starts.length,1);
+  assert.equal(f.calls.god[0].god,'zeus');assert.equal(f.context.learningBoonRank(),5);assert.equal(f.calls.starts.length,1);
   f.calls.god[0].callback();assert.equal(f.calls.starts.at(-1).index,2);
   f.checkpoint({type:'pom'},3);assert.equal(f.calls.pom,0);f.receive(f.result(2));assert.equal(f.calls.pom,1);
   f.calls.pomCallback();assert.equal(f.calls.starts.at(-1).index,3);
